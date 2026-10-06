@@ -100,7 +100,7 @@ body {
   display: grid;
 
   grid-template-columns: 1fr 40px;
-  grid-template-rows: 1fr 64px;
+  grid-template-rows: 1fr;
 
   box-sizing: border-box;
 
@@ -210,18 +210,17 @@ body {
 }
 
 
-/* Papierkorb */
+/* Papierkorb – sitzt in der Werkzeugleiste */
 
-#trash {
-  grid-column: 1 / -1;
-  grid-row: 2;
+#controls #trash {
+  flex: 0 0 72px;
 
   display: flex;
 
   align-items: center;
   justify-content: center;
 
-  border-top: var(--line) solid var(--ink);
+  border-left: var(--line) solid var(--ink);
 
   transition: background .15s;
 }
@@ -247,6 +246,13 @@ body {
 
 #trash.hover svg {
   stroke: var(--paper);
+}
+
+
+/* Tempo-Spalte: nur auf dem Handy (quer) sichtbar */
+
+#tempoColumn {
+  display: none;
 }
 
 
@@ -278,36 +284,94 @@ body {
 
 
 /* =====================================================
-   TITEL DES STÜCKS (oben links auf der Partitur)
+   TITEL DES STÜCKS
+   Anzeige klein oben rechts, Eingabe über das T-Werkzeug
    ===================================================== */
 
-#scoreTitle {
+#titleDisplay {
   position: absolute;
 
-  left: 12px;
   top: 8px;
+  right: 12px;
 
   z-index: 800;
 
-  width: min(60%, 360px);
+  max-width: 60%;
+
+  overflow: hidden;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  font-size: 15px;
+  font-weight: 700;
+
+  pointer-events: none;
+}
+
+
+#titleDialog {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 1300;
+
+  display: flex;
+
+  justify-content: center;
+  align-items: flex-start;
+
+  padding-top: 10vh;
+
+  background: rgba(242, 240, 233, .75);
+}
+
+
+#titleDialog[hidden] {
+  display: none;
+}
+
+
+.titleBox {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  width: min(90vw, 460px);
+
+  box-sizing: border-box;
+
+  padding: 8px 8px 8px 16px;
+
+  border: var(--line) solid var(--ink);
+  border-radius: 14px;
+
+  background: var(--paper);
+}
+
+
+#scoreTitle {
+  flex: 1 1 auto;
+
+  min-width: 0;
 
   margin: 0;
-  padding: 2px 0;
+  padding: 6px 0;
 
   border: 0;
-  border-bottom: 2px solid transparent;
+  border-bottom: 2px solid var(--ink);
   border-radius: 0;
 
   background: transparent;
 
   color: var(--ink);
 
-  font: 700 16px/1.3 "Atkinson Hyperlegible", "Trebuchet MS", sans-serif;
+  font: 700 17px/1.3 "Atkinson Hyperlegible", "Trebuchet MS", sans-serif;
 
   outline: none;
-
-  -webkit-user-select: text;
-  user-select: text;
 }
 
 
@@ -317,8 +381,47 @@ body {
 }
 
 
-#scoreTitle:focus {
-  border-bottom-color: var(--ink);
+#titleOk {
+  flex: 0 0 44px;
+
+  width: 44px;
+  height: 44px;
+
+  margin: 0;
+  padding: 0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: var(--ink);
+
+  cursor: pointer;
+}
+
+
+#titleOk svg {
+  width: 24px;
+  height: 24px;
+
+  fill: none;
+
+  stroke: var(--paper);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+/* Ausgewähltes Zeichen: lässt sich verschieben und vergrößern */
+
+#landscape .step.selected {
+  outline: 2px dashed rgba(20, 20, 20, .45);
+  outline-offset: 6px;
 }
 
 
@@ -833,14 +936,15 @@ body {
 
   #soundpalette {
     grid-template-columns: 1fr 32px;
-    grid-template-rows: 1fr 52px;
+    grid-template-rows: 1fr;
   }
 
   #pitchColumn {
     padding: 12px 8px 12px 0;
   }
 
-  #controls button {
+  #controls button,
+  #controls #trash {
     flex-basis: 52px;
   }
 
@@ -874,7 +978,8 @@ body {
 
 @media (max-width: 420px) {
 
-  #controls button {
+  #controls button,
+  #controls #trash {
     flex-basis: 44px;
   }
 
@@ -891,33 +996,81 @@ body {
 
 /* =====================================================
    HANDY QUER
-   Höhe ist knapp: Fundus links (2 Spalten),
-   Bedienung rechts als senkrechte Leiste,
-   Partitur bekommt die ganze Mitte.
+   ganz links: Tempo | Farbe | Zeichnungen
+   Mitte: Partitur
+   rechts: Werkzeugleiste
+   Alle Kästen mit runden Ecken, passend zum Bildschirm.
    ===================================================== */
 
 @media (orientation: landscape) and (max-height: 500px) {
 
   #klanglandschaft {
     --gap: 8px;
-    --fundus: 112px;
-    --side: 60px;
+    --radius: 16px;
+    --side: 56px;
+    --slider-col: 36px;
+    --icons-col: 104px;
+    --fundus: calc(2 * var(--slider-col) + var(--icons-col) + 12px);
 
     flex-direction: row;
   }
 
 
-  /* ---------- Fundus ---------- */
+  /* ---------- Linke Seite: drei runde Kästen ---------- */
 
   #soundpalette {
     bottom: var(--gap);
 
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr 40px 44px;
+    display: grid;
+
+    grid-template-columns: var(--slider-col) var(--slider-col) 1fr;
+    grid-template-rows: 1fr;
+
+    gap: 6px;
+
+    border: 0;
+
+    background: transparent;
   }
 
-  #paletteIcons {
+
+  #tempoColumn,
+  #pitchColumn {
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    gap: 6px;
+
+    padding: 10px 0;
+
+    box-sizing: border-box;
+
+    border: var(--line) solid var(--ink);
+    border-radius: var(--radius);
+
+    background: var(--paper);
+
+    min-height: 0;
+  }
+
+
+  #tempoColumn {
     grid-column: 1;
+    grid-row: 1;
+  }
+
+
+  #pitchColumn {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+
+  #paletteIcons {
+    grid-column: 3;
     grid-row: 1;
 
     display: grid;
@@ -928,51 +1081,87 @@ body {
     justify-items: center;
 
     padding: 4px;
+
+    border: var(--line) solid var(--ink);
+    border-radius: var(--radius);
+
+    background: var(--paper);
   }
 
-  #pitchColumn {
-    grid-column: 1;
-    grid-row: 2;
 
-    flex-direction: row-reverse;   /* tief links, hoch rechts */
-
-    gap: 6px;
-
-    padding: 0 8px;
-
-    border-top: var(--line) solid var(--ink);
+  .pitchLabel,
+  .sideLabel {
+    font-size: 9px;
+    line-height: 1;
   }
 
-  .pitchLabel {
-    font-size: 10px;
+
+  .sideValue {
+    font-size: 11px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
   }
 
-  #pitchSlider {
+
+  /* Schieber: schmale runde Bahn, runder Griff */
+
+  #pitchSlider,
+  #tempoSliderV {
+    position: relative;
+
     flex: 1 1 auto;
 
-    width: auto;
+    width: 12px;
+
+    box-sizing: border-box;
+
+    border: var(--line) solid var(--ink);
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    touch-action: none;
+  }
+
+
+  #pitchSlider {
+    background: linear-gradient(to bottom, #f15060, #0078bf);
+  }
+
+
+  #tempoSliderV {
+    background: var(--paper);
+  }
+
+
+  #pitchThumb,
+  #tempoThumb {
+    position: absolute;
+
+    left: -8px;
+    width: 24px;
     height: 12px;
 
-    background: linear-gradient(to right, #0078bf, #f15060);
+    transform: translateY(-50%);
+
+    box-sizing: border-box;
+
+    border: var(--line) solid var(--ink);
+    border-radius: 6px;
+
+    pointer-events: none;
   }
+
 
   #pitchThumb {
-    top: -8px;
-    left: calc(var(--pv, 50) * 1%);
-
-    width: 12px;
-    height: 24px;
-
-    transform: translateX(-50%);
+    top: calc((100 - var(--pv, 50)) * 1%);
   }
 
-  #trash {
-    grid-row: 3;
-  }
 
-  #trash svg {
-    width: 22px;
-    height: 22px;
+  #tempoThumb {
+    top: calc(var(--tv, 64) * 1%);
+
+    background: var(--ink);
   }
 
 
@@ -982,15 +1171,15 @@ body {
     margin: var(--gap) 0 var(--gap) calc(var(--fundus) + 2 * var(--gap));
   }
 
-  #scoreTitle {
-    left: 8px;
+  #titleDisplay {
     top: 4px;
+    right: 8px;
 
-    font-size: 13px;
+    font-size: 12px;
   }
 
 
-  /* ---------- Bedienung rechts ---------- */
+  /* ---------- Werkzeugleiste rechts ---------- */
 
   #controls {
     flex: 0 0 var(--side);
@@ -1001,99 +1190,45 @@ body {
     margin: var(--gap);
 
     flex-direction: column;
+
+    border-radius: var(--radius);
+
+    overflow: hidden;
   }
 
-  #controls button {
+  #controls button,
+  #controls #trash {
     flex: 1 1 44px;
 
-    min-height: 32px;
+    min-height: 30px;
 
     border-left: 0;
     border-top: var(--line) solid var(--ink);
   }
 
-  #controls button:first-child {
+  #controls > :first-child {
     border-top: 0;
   }
 
   #play {
-    flex: 1.3 1 52px !important;
+    flex: 1.3 1 50px !important;
   }
 
-  #controls .icon {
-    width: 22px;
-    height: 22px;
+  #controls .icon,
+  #trash svg {
+    width: 21px;
+    height: 21px;
   }
 
   #play svg {
-    width: 24px;
-    height: 24px;
+    width: 23px;
+    height: 23px;
   }
 
-
-  /* Tempo: nur die Zahl – antippen öffnet den Regler */
+  /* Tempo sitzt links als Schieber */
 
   #tempoGroup {
-    flex: 1 1 44px;
-
-    min-height: 36px;
-
-    flex-direction: column;
-    justify-content: center;
-
-    gap: 0;
-
-    padding: 0;
-
-    border-left: 0;
-    border-top: var(--line) solid var(--ink);
-
-    cursor: pointer;
-  }
-
-  .tempoLabel {
-    display: none;
-  }
-
-  #tempoValue {
-    display: block;
-
-    min-width: 0;
-
-    padding: 0 4px;
-
-    text-align: center;
-
-    font-size: 12px;
-    line-height: 1.15;
-  }
-
-  #tempo {
-    display: none;
-  }
-
-  #tempoGroup.open #tempo {
-    display: block;
-
-    position: fixed;
-
-    top: 50%;
-    right: calc(var(--side) + 2 * var(--gap) + 8px);
-
-    width: min(50vw, 360px);
-    height: 52px;
-
-    transform: translateY(-50%);
-
-    padding: 0 16px;
-
-    box-sizing: border-box;
-
-    border: var(--line) solid var(--ink);
-
-    background: var(--paper);
-
-    z-index: 1200;
+    display: none !important;
   }
 
 
@@ -1101,6 +1236,10 @@ body {
 
   #scoreMessage {
     bottom: calc(var(--gap) + 12px);
+  }
+
+  #titleDialog {
+    padding-top: 12px;
   }
 
 }
@@ -1166,6 +1305,20 @@ body {
 
   <div id="soundpalette">
 
+    <div id="tempoColumn">
+
+      <span id="tempoNumber" class="sideLabel sideValue">90</span>
+
+      <div id="tempoSliderV" role="slider" tabindex="0"
+           aria-label="Tempo" aria-valuemin="50" aria-valuemax="160" aria-valuenow="90"
+           title="Tempo: oben schnell, unten langsam">
+        <div id="tempoThumb"></div>
+      </div>
+
+      <span class="sideLabel">BPM</span>
+
+    </div>
+
     <div id="paletteIcons"></div>
 
     <div id="pitchColumn">
@@ -1182,21 +1335,12 @@ body {
 
     </div>
 
-    <div id="trash" title="Zeichen hierher ziehen zum Löschen" aria-label="Papierkorb">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 7h16"></path>
-        <path d="M9 7V4h6v3"></path>
-        <path d="M6 7l1 13h10l1-13"></path>
-        <path d="M10 11v6M14 11v6"></path>
-      </svg>
-    </div>
-
   </div>
 
 
   <div id="landscape">
 
-    <input id="scoreTitle" type="text" maxlength="40" placeholder="Titel des Stücks" aria-label="Titel des Stücks" autocomplete="off" spellcheck="false">
+    <div id="titleDisplay" aria-live="polite"></div>
 
     <svg id="pathLayer" viewBox="0 0 1000 1000" preserveAspectRatio="none">
 
@@ -1243,6 +1387,22 @@ body {
       </svg>
     </button>
 
+    <div class="controlButton" id="trash" title="Zeichen hierher ziehen zum Löschen" aria-label="Papierkorb" role="img">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 7h16"></path>
+        <path d="M9 7V4h6v3"></path>
+        <path d="M6 7l1 13h10l1-13"></path>
+        <path d="M10 11v6M14 11v6"></path>
+      </svg>
+    </div>
+
+    <button class="controlButton" id="titleButton" title="Titel des Stücks" aria-label="Titel des Stücks">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 6h14"></path>
+        <path d="M12 6v13"></path>
+      </svg>
+    </button>
+
     <div id="tempoGroup">
 
       <span class="tempoLabel">langsam</span>
@@ -1273,21 +1433,6 @@ body {
 
     <input id="imageInput" type="file" accept="image/png" hidden>
 
-    <button class="controlButton" id="fullscreen" title="Vollbild" aria-label="Vollbild" hidden>
-      <svg class="icon iconEnter" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 9V4h5"></path>
-        <path d="M15 4h5v5"></path>
-        <path d="M20 15v5h-5"></path>
-        <path d="M9 20H4v-5"></path>
-      </svg>
-      <svg class="icon iconExit" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M9 4v5H4"></path>
-        <path d="M20 9h-5V4"></path>
-        <path d="M15 20v-5h5"></path>
-        <path d="M4 15h5v5"></path>
-      </svg>
-    </button>
-
   </div>
 
 
@@ -1299,6 +1444,16 @@ body {
       <path d="M90 56l6 6 5-7"></path>
     </svg>
     <p>Handy quer halten</p>
+  </div>
+
+
+  <div id="titleDialog" hidden>
+    <div class="titleBox">
+      <input id="scoreTitle" type="text" maxlength="40" placeholder="Titel des Stücks" aria-label="Titel des Stücks" autocomplete="off" spellcheck="false" enterkeyhint="done">
+      <button id="titleOk" type="button" aria-label="Fertig">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+      </button>
+    </div>
   </div>
 
 
@@ -1329,6 +1484,8 @@ document.addEventListener("DOMContentLoaded", function () {
    bild  = Zeichnung (PNG oder JPG, heller oder
            transparenter Hintergrund)
    klang = Sounddatei (mp3)
+   ersatz = (freiwillig) zweite Adresse, falls "klang"
+            nicht gefunden wird
 
    Beliebig viele Zeilen möglich.
    Leere Bild-Adresse "" = Platzhalter mit Nummer.
@@ -1344,42 +1501,50 @@ const GRUPPEN = {
 
     { // 1
       bild:  "grafiken/01-spirale.png",
-      klang: "https://freight.cargo.site/m/K3142575085704848764014052702319/21kb808-bd01.wav.mp3"
+      klang: "klaenge/21kb808-bd01.wav.mp3",
+      ersatz: "https://freight.cargo.site/m/K3142575085704848764014052702319/21kb808-bd01.wav.mp3"
     },
 
     { // 2
       bild:  "grafiken/02-knaeuel.png",
-      klang: "https://freight.cargo.site/m/N3142575085833975972530019563631/24kb808-hh03.wav.mp3"
+      klang: "klaenge/24kb808-hh03.wav.mp3",
+      ersatz: "https://freight.cargo.site/m/N3142575085833975972530019563631/24kb808-hh03.wav.mp3"
     },
 
     { // 3
       bild:  "grafiken/03-punktfeld.png",
-      klang: "https://freight.cargo.site/m/A3142575085963103181045986424943/34kb808-sd02.wav.mp3"
+      klang: "klaenge/34kb808-sd02.wav.mp3",
+      ersatz: "https://freight.cargo.site/m/A3142575085963103181045986424943/34kb808-sd02.wav.mp3"
     },
 
     { // 4
       bild:  "grafiken/04-zickzack.png",
-      klang: "https://freight.cargo.site/m/W3142575085981549925119695976559/44kb808-tme3.wav.mp3"
+      klang: "klaenge/44kb808-tme3.wav.mp3",
+      ersatz: "https://freight.cargo.site/m/W3142575085981549925119695976559/44kb808-tme3.wav.mp3"
     },
 
     { // 5
       bild:  "grafiken/05-welle.png",
-      klang: "https://freight.cargo.site/m/G3142575085999996669193405528175/45kb808-cme1.wav.mp3"
+      klang: "klaenge/45kb808-cme1.wav.mp3",
+      ersatz: "https://freight.cargo.site/m/G3142575085999996669193405528175/45kb808-cme1.wav.mp3"
     },
 
     { // 6
       bild:  "grafiken/06-schraffur.png",
-      klang: "https://freight.cargo.site/m/B3142575086036890157340824631407/54kb808-thi3.wav.mp3"
+      klang: "klaenge/54kb808-thi3.wav.mp3",
+      ersatz: "https://freight.cargo.site/m/B3142575086036890157340824631407/54kb808-thi3.wav.mp3"
     },
 
     { // 7
       bild:  "grafiken/07-ringe.png",
-      klang: "https://freight.cargo.site/m/O3142575086073783645488243734639/67kb808-clap4.wav.mp3"
+      klang: "klaenge/67kb808-clap4.wav.mp3",
+      ersatz: "https://freight.cargo.site/m/O3142575086073783645488243734639/67kb808-clap4.wav.mp3"
     },
 
     { // 8
       bild:  "grafiken/08-strahlen.png",
-      klang: "https://freight.cargo.site/m/Q3142575086110677133635662837871/367kb808-cym05.wav.mp3"
+      klang: "klaenge/367kb808-cym05.wav.mp3",
+      ersatz: "https://freight.cargo.site/m/Q3142575086110677133635662837871/367kb808-cym05.wav.mp3"
     }
 
   ],
@@ -1506,6 +1671,12 @@ const micButton = document.getElementById("mic");
 const scoreTitle = document.getElementById("scoreTitle");
 const tempoGroup = document.getElementById("tempoGroup");
 const fullscreenButton = document.getElementById("fullscreen");
+const tempoSliderV = document.getElementById("tempoSliderV");
+const tempoNumber = document.getElementById("tempoNumber");
+const titleButton = document.getElementById("titleButton");
+const titleDialog = document.getElementById("titleDialog");
+const titleOk = document.getElementById("titleOk");
+const titleDisplay = document.getElementById("titleDisplay");
 
 /* Aufnahme nur auf Seiten, deren HTML den Mikrofon-Knopf hat */
 const RECORDING_ENABLED = !!micButton;
@@ -1582,6 +1753,11 @@ async function loadSound(url, row) {
 
   try {
     const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error("nicht gefunden");
+    }
+
     const data = await response.arrayBuffer();
     const decoded = await audioContext.decodeAudioData(data);
 
@@ -1591,6 +1767,16 @@ async function loadSound(url, row) {
   }
 
   catch (error) {
+
+    /* Ersatz-Adresse probieren (z. B. Cargo), falls angegeben */
+
+    const ersatz = SOUNDS[row] && SOUNDS[row].ersatz;
+
+    if (ersatz && ersatz !== url) {
+      loadSound(ersatz, row);
+      return;
+    }
+
     console.error("Sound konnte nicht geladen werden:", url, error);
   }
 
@@ -2247,7 +2433,7 @@ function finishPaletteInteraction(event) {
     else {
       positionCell(newCell, event.clientX, event.clientY);
       newCell.classList.remove("dragging");
-      selectedCell = newCell;
+      selectCell(newCell);
     }
 
   }
@@ -2311,28 +2497,37 @@ palette.addEventListener("pointercancel", function (event) {
 
 /* =========================================================
    ZEICHEN AUF DER FLÄCHE
+
+   Kurz antippen      = auswählen – dann verschieben und
+                        mit zwei Fingern vergrößern
+   Lange drücken      = an / aus
+   Doppelt tippen     = eingestellte Farbe übernehmen
+   Leere Stelle tippen = Auswahl aufheben
    ========================================================= */
+
+const LONG_PRESS_TIME = 500;
+const MOVE_TOLERANCE = 8;
+const DOUBLE_TAP_TIME = 350;
 
 let selectedCell = null;
 
 let startCell = null;
+let startWasSelected = false;
 let primaryPointer = null;
-let mode = null;
+let mode = null;          // null | "drag" | "pinch" | "longpress" | "ignore"
 
 let startX = 0;
 let startY = 0;
 
-let paintValue = true;
-let lastPaintedCell = null;
 let holdTimer = null;
+
+let emptyTap = null;      // Tippen auf leere Stelle
 
 const pointers = new Map();
 
 let pinchCell = null;
 let pinchStartDistance = 0;
 let pinchStartScale = 1;
-
-const DOUBLE_TAP_TIME = 350;
 
 let lastTap = { cell: null, time: 0 };
 
@@ -2364,17 +2559,30 @@ function setCell(cell, value) {
 }
 
 
-function beginDrag() {
+function selectCell(cell) {
 
-  if (!startCell || mode !== null) {
-    return;
+  if (selectedCell && selectedCell !== cell) {
+    selectedCell.classList.remove("selected");
   }
 
-  mode = "drag";
+  selectedCell = cell || null;
 
-  startCell.classList.add("dragging");
+  if (selectedCell) {
+    selectedCell.classList.add("selected");
+  }
 
-  try { landscape.setPointerCapture(primaryPointer); } catch (e) {}
+}
+
+
+function isOverTrash(x, y) {
+
+  if (!trash) {
+    return false;
+  }
+
+  const r = trash.getBoundingClientRect();
+
+  return r.width > 0 && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
 
 }
 
@@ -2501,12 +2709,6 @@ drawButton.addEventListener("click", function () {
 
 landscape.addEventListener("pointerdown", function (event) {
 
-  /* Titelzeile: normal tippen lassen */
-
-  if (event.target.closest("#scoreTitle")) {
-    return;
-  }
-
   /* ---------- LINIE ZEICHNEN ---------- */
 
   if (drawingMode) {
@@ -2527,8 +2729,6 @@ landscape.addEventListener("pointerdown", function (event) {
   }
 
 
-  /* ---------- ZEICHEN ---------- */
-
   const cell = event.target.closest(".step");
 
   if (event.pointerType === "touch") {
@@ -2536,7 +2736,7 @@ landscape.addEventListener("pointerdown", function (event) {
   }
 
 
-  /* ---------- PINCH ---------- */
+  /* ---------- ZWEI FINGER: ausgewähltes Zeichen vergrößern ---------- */
 
   if (event.pointerType === "touch" && pointers.size === 2) {
 
@@ -2544,10 +2744,21 @@ landscape.addEventListener("pointerdown", function (event) {
 
     clearTimeout(holdTimer);
 
-    pinchCell = startCell || selectedCell;
+    emptyTap = null;
+
+    if (startCell) {
+      startCell.classList.remove("dragging");
+    }
+
+    pinchCell = selectedCell;
 
     if (!pinchCell) {
+      mode = "ignore";
       return;
+    }
+
+    if (pendingState === null) {
+      beginChange();
     }
 
     mode = "pinch";
@@ -2562,17 +2773,29 @@ landscape.addEventListener("pointerdown", function (event) {
   }
 
 
+  /* ---------- LEERE STELLE ---------- */
+
   if (!cell) {
+
+    emptyTap = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY
+    };
+
     return;
+
   }
+
+
+  /* ---------- ZEICHEN ---------- */
 
   event.preventDefault();
 
   beginChange();
 
-  selectedCell = cell;
-
   startCell = cell;
+  startWasSelected = (selectedCell === cell);
   primaryPointer = event.pointerId;
 
   startX = event.clientX;
@@ -2580,13 +2803,31 @@ landscape.addEventListener("pointerdown", function (event) {
 
   mode = null;
 
-  lastPaintedCell = cell;
+  try { landscape.setPointerCapture(event.pointerId); } catch (e) {}
 
-  paintValue = !cell.classList.contains("active");
+
+  /* Lange drücken = an / aus */
 
   clearTimeout(holdTimer);
 
-  holdTimer = setTimeout(beginDrag, HOLD_TIME);
+  holdTimer = setTimeout(function () {
+
+    if (mode !== null || !startCell) {
+      return;
+    }
+
+    mode = "longpress";
+
+    setCell(startCell, !startCell.classList.contains("active"));
+
+    try {
+      if (navigator.vibrate) {
+        navigator.vibrate(12);
+      }
+    }
+    catch (e) {}
+
+  }, LONG_PRESS_TIME);
 
 });
 
@@ -2631,7 +2872,18 @@ landscape.addEventListener("pointermove", function (event) {
   }
 
 
-  /* ---------- PINCH ---------- */
+  /* leere Stelle: bei Bewegung kein "Tippen" mehr */
+
+  if (emptyTap && event.pointerId === emptyTap.id) {
+
+    if (Math.hypot(event.clientX - emptyTap.x, event.clientY - emptyTap.y) > MOVE_TOLERANCE) {
+      emptyTap = null;
+    }
+
+  }
+
+
+  /* ---------- VERGRÖSSERN ---------- */
 
   if (mode === "pinch" && pinchCell && pointers.size >= 2) {
 
@@ -2650,8 +2902,30 @@ landscape.addEventListener("pointermove", function (event) {
   }
 
 
-  if (!startCell) {
+  if (!startCell || event.pointerId !== primaryPointer) {
     return;
+  }
+
+  const distance = Math.hypot(
+    event.clientX - startX,
+    event.clientY - startY
+  );
+
+
+  /* Bewegung beginnt: nur ausgewählte Zeichen lassen sich schieben */
+
+  if (mode === null && distance > MOVE_TOLERANCE) {
+
+    clearTimeout(holdTimer);
+
+    if (startWasSelected) {
+      mode = "drag";
+      startCell.classList.add("dragging");
+    }
+    else {
+      mode = "ignore";
+    }
+
   }
 
 
@@ -2665,44 +2939,6 @@ landscape.addEventListener("pointermove", function (event) {
 
     if (trash) {
       trash.classList.toggle("hover", isOverTrash(event.clientX, event.clientY));
-    }
-
-    return;
-
-  }
-
-
-  if (event.pointerId !== primaryPointer) {
-    return;
-  }
-
-  const distance = Math.hypot(
-    event.clientX - startX,
-    event.clientY - startY
-  );
-
-
-  /* ---------- WISCHEN (an/aus) ---------- */
-
-  if (mode === null && distance > PAINT_DISTANCE) {
-
-    clearTimeout(holdTimer);
-
-    mode = "paint";
-
-    setCell(startCell, paintValue);
-
-  }
-
-
-  if (mode === "paint") {
-
-    const element = document.elementFromPoint(event.clientX, event.clientY);
-    const cell = element ? element.closest("#landscape .step") : null;
-
-    if (cell && cell !== lastPaintedCell) {
-      setCell(cell, paintValue);
-      lastPaintedCell = cell;
     }
 
   }
@@ -2722,19 +2958,6 @@ function releaseCapture(pointerId) {
     }
   }
   catch (e) {}
-
-}
-
-
-function isOverTrash(x, y) {
-
-  if (!trash) {
-    return false;
-  }
-
-  const r = trash.getBoundingClientRect();
-
-  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
 
 }
 
@@ -2765,8 +2988,6 @@ function finishPointer(event) {
   }
 
 
-  /* ---------- NORMALE BEDIENUNG ---------- */
-
   clearTimeout(holdTimer);
 
   if (event.pointerType === "touch") {
@@ -2774,7 +2995,20 @@ function finishPointer(event) {
   }
 
 
-  /* ---------- PINCH ENDE ---------- */
+  /* ---------- LEERE STELLE GETIPPT = Auswahl aufheben ---------- */
+
+  if (emptyTap && event.pointerId === emptyTap.id) {
+
+    if (event.type === "pointerup" && mode !== "pinch") {
+      selectCell(null);
+    }
+
+    emptyTap = null;
+
+  }
+
+
+  /* ---------- VERGRÖSSERN ENDE ---------- */
 
   if (mode === "pinch") {
 
@@ -2799,61 +3033,70 @@ function finishPointer(event) {
 
 
   if (event.pointerId !== primaryPointer) {
+
+    if (mode === "ignore" && pointers.size === 0) {
+      mode = null;
+    }
+
     return;
-  }
-
-
-  /* kurzer Klick = an/aus
-     Doppeltippen = Zeichen bekommt die eingestellte Farbe
-     (das zweite Tippen schaltet wieder zurück – an/aus
-     bleibt also, wie es war) */
-
-  if (startCell && mode === null) {
-
-    setCell(startCell, paintValue);
-
-    const now = Date.now();
-
-    if (lastTap.cell === startCell && now - lastTap.time < DOUBLE_TAP_TIME) {
-
-      startCell.dataset.pitch = currentPitch;
-      drawCell(startCell);
-
-      lastTap = { cell: null, time: 0 };
-
-    }
-
-    else {
-      lastTap = { cell: startCell, time: now };
-    }
 
   }
 
 
-  /* Drag Ende */
+  if (startCell) {
 
-  if (startCell && mode === "drag") {
+    /* ---------- KURZ TIPPEN ---------- */
 
-    const rect = landscape.getBoundingClientRect();
+    if (mode === null) {
 
-    /* Auf den Papierkorb oder zurück in den Fundus = löschen. */
+      const now = Date.now();
 
-    if (trash) {
-      trash.classList.remove("hover");
-    }
+      /* zweimal schnell = Farbe übernehmen */
 
-    if (isOverTrash(event.clientX, event.clientY) || event.clientX < rect.left) {
+      if (lastTap.cell === startCell && now - lastTap.time < DOUBLE_TAP_TIME) {
 
-      startCell.remove();
+        startCell.dataset.pitch = currentPitch;
+        drawCell(startCell);
 
-      if (selectedCell === startCell) {
-        selectedCell = null;
+        lastTap = { cell: null, time: 0 };
+
       }
 
+      else {
+        lastTap = { cell: startCell, time: now };
+      }
+
+      selectCell(startCell);
+
     }
 
-    else {
-      startCell.classList.remove("dragging");
+
+    /* ---------- VERSCHIEBEN ENDE ---------- */
+
+    else if (mode === "drag") {
+
+      const rect = landscape.getBoundingClientRect();
+
+      if (trash) {
+        trash.classList.remove("hover");
+      }
+
+      /* Auf den Papierkorb oder zurück zum Fundus = löschen */
+
+      if (isOverTrash(event.clientX, event.clientY) || event.clientX < rect.left) {
+
+        if (selectedCell === startCell) {
+          selectCell(null);
+        }
+
+        startCell.remove();
+
+      }
+
+      else {
+        startCell.classList.remove("dragging");
+      }
+
     }
 
   }
@@ -2861,9 +3104,9 @@ function finishPointer(event) {
   releaseCapture(event.pointerId);
 
   startCell = null;
+  startWasSelected = false;
   primaryPointer = null;
   mode = null;
-  lastPaintedCell = null;
 
   endChange();
 
@@ -2909,9 +3152,15 @@ landscape.addEventListener("wheel", function (event) {
 let bpm = Number(tempoSlider.value);
 
 function showTempo() {
+
   if (tempoValue) {
     tempoValue.textContent = bpm + " BPM";
   }
+
+  if (typeof updateTempoVertical === "function") {
+    updateTempoVertical();
+  }
+
 }
 
 showTempo();
@@ -3506,6 +3755,7 @@ function clearScore() {
 
   if (scoreTitle) {
     scoreTitle.value = "";
+    updateTitleDisplay();
   }
 
 }
@@ -3914,6 +4164,7 @@ function loadScore(code, origAspect) {
 
   if (scoreTitle) {
     scoreTitle.value = score.title || "";
+    updateTitleDisplay();
   }
 
   return true;
@@ -3982,7 +4233,9 @@ function renderScoreImage() {
     ctx.fillStyle = "#141414";
     ctx.font = "700 " + (w < 700 ? 13 : 16) + "px 'Atkinson Hyperlegible', 'Trebuchet MS', sans-serif";
     ctx.textBaseline = "top";
-    ctx.fillText(scoreTitle.value.trim(), 12, 10);
+    ctx.textAlign = "right";
+    ctx.fillText(scoreTitle.value.trim(), w - 12, 10);
+    ctx.textAlign = "left";
 
   }
 
@@ -4886,6 +5139,161 @@ if (fullscreenButton) {
   }
 
 }
+
+
+/* =========================================================
+   TEMPO – senkrechter Regler (Handy quer)
+   oben = schnell, unten = langsam
+   ========================================================= */
+
+const TEMPO_MIN = Number(tempoSlider.min) || 50;
+const TEMPO_MAX = Number(tempoSlider.max) || 160;
+
+function updateTempoVertical() {
+
+  /* bewusst ohne TEMPO_MIN/MAX: wird schon beim Start aufgerufen */
+
+  const min = Number(tempoSlider.min) || 50;
+  const max = Number(tempoSlider.max) || 160;
+
+  if (tempoSliderV) {
+    const t = (bpm - min) / (max - min);
+    tempoSliderV.style.setProperty("--tv", (1 - t) * 100);
+    tempoSliderV.setAttribute("aria-valuenow", bpm);
+  }
+
+  if (tempoNumber) {
+    tempoNumber.textContent = bpm;
+  }
+
+}
+
+
+function setTempo(value) {
+
+  bpm = Math.round(Math.max(TEMPO_MIN, Math.min(TEMPO_MAX, value)));
+
+  tempoSlider.value = bpm;
+
+  showTempo();
+
+}
+
+
+if (tempoSliderV) {
+
+  let tempoPointer = null;
+
+  const tempoFromEvent = function (event) {
+    const r = tempoSliderV.getBoundingClientRect();
+    const t = 1 - (event.clientY - r.top) / r.height;
+    return TEMPO_MIN + t * (TEMPO_MAX - TEMPO_MIN);
+  };
+
+  tempoSliderV.addEventListener("pointerdown", function (event) {
+    event.preventDefault();
+    tempoPointer = event.pointerId;
+    try { tempoSliderV.setPointerCapture(event.pointerId); } catch (e) {}
+    setTempo(tempoFromEvent(event));
+  });
+
+  tempoSliderV.addEventListener("pointermove", function (event) {
+    if (event.pointerId === tempoPointer) {
+      setTempo(tempoFromEvent(event));
+    }
+  });
+
+  const endTempo = function (event) {
+    if (event.pointerId === tempoPointer) {
+      tempoPointer = null;
+      try { tempoSliderV.releasePointerCapture(event.pointerId); } catch (e) {}
+    }
+  };
+
+  tempoSliderV.addEventListener("pointerup", endTempo);
+  tempoSliderV.addEventListener("pointercancel", endTempo);
+
+  tempoSliderV.addEventListener("keydown", function (event) {
+    if (event.key === "ArrowUp") { setTempo(bpm + 5); event.preventDefault(); }
+    if (event.key === "ArrowDown") { setTempo(bpm - 5); event.preventDefault(); }
+  });
+
+}
+
+updateTempoVertical();
+
+
+/* =========================================================
+   TITEL – über das T in der Werkzeugleiste eingeben,
+   steht dann klein oben rechts auf der Partitur
+   ========================================================= */
+
+function updateTitleDisplay() {
+
+  if (titleDisplay && scoreTitle) {
+    titleDisplay.textContent = scoreTitle.value.trim();
+  }
+
+}
+
+
+function openTitleDialog() {
+
+  if (!titleDialog || !scoreTitle) {
+    return;
+  }
+
+  titleDialog.hidden = false;
+
+  scoreTitle.focus();
+  scoreTitle.select();
+
+}
+
+
+function closeTitleDialog() {
+
+  if (!titleDialog) {
+    return;
+  }
+
+  titleDialog.hidden = true;
+
+  if (scoreTitle) {
+    scoreTitle.blur();
+  }
+
+  updateTitleDisplay();
+
+}
+
+
+if (titleButton) {
+  titleButton.addEventListener("click", openTitleDialog);
+}
+
+if (titleOk) {
+  titleOk.addEventListener("click", closeTitleDialog);
+}
+
+if (scoreTitle) {
+  scoreTitle.addEventListener("keydown", function (event) {
+    if (event.key === "Enter" || event.key === "Escape") {
+      event.preventDefault();
+      closeTitleDialog();
+    }
+  });
+}
+
+if (titleDialog) {
+  titleDialog.addEventListener("pointerdown", function (event) {
+    if (event.target === titleDialog) {
+      closeTitleDialog();
+    }
+  });
+}
+
+updateTitleDisplay();
 
 
 /* =========================================================

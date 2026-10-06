@@ -2,11 +2,19 @@
    SERVICE WORKER – macht die App offline-fähig
 
    WICHTIG BEI JEDEM UPDATE:
-   Die Versionsnummer unten um 1 erhöhen (v1 → v2 → v3 …).
+   VERSION_NUMMER unten um 1 erhöhen (v2 → v3 → v4 …).
    Nur dann holen sich die Geräte die neue Version.
    ========================================================= */
 
-const VERSION = "klanglandschaft-v1";
+const VERSION_NUMMER = "v3";
+
+
+/* Jedes Repository bekommt seinen eigenen Speicher –
+   so stören sich mehrere Klanglandschaften unter
+   dina2027.github.io nicht gegenseitig. */
+
+const PREFIX = "klanglandschaft:" + self.registration.scope + ":";
+const VERSION = PREFIX + VERSION_NUMMER;
 
 
 /* Dateien, die sofort gespeichert werden */
@@ -29,13 +37,35 @@ const APP_FILES = [
 ];
 
 
+/* Klänge – werden einzeln gespeichert. Fehlt einer,
+   läuft die App trotzdem (er wird dann beim ersten
+   Abspielen geladen). */
+
+const SOUND_FILES = [
+  "./klaenge/21kb808-bd01.wav.mp3",
+  "./klaenge/24kb808-hh03.wav.mp3",
+  "./klaenge/34kb808-sd02.wav.mp3",
+  "./klaenge/44kb808-tme3.wav.mp3",
+  "./klaenge/45kb808-cme1.wav.mp3",
+  "./klaenge/54kb808-thi3.wav.mp3",
+  "./klaenge/67kb808-clap4.wav.mp3",
+  "./klaenge/367kb808-cym05.wav.mp3"
+];
+
+
 /* Installieren: App-Dateien speichern */
 
 self.addEventListener("install", function (event) {
 
   event.waitUntil(
     caches.open(VERSION).then(function (cache) {
-      return cache.addAll(APP_FILES);
+      return cache.addAll(APP_FILES).then(function () {
+        return Promise.all(
+          SOUND_FILES.map(function (file) {
+            return cache.add(file).catch(function () {});
+          })
+        );
+      });
     })
   );
 
@@ -52,7 +82,14 @@ self.addEventListener("activate", function (event) {
     caches.keys().then(function (keys) {
       return Promise.all(
         keys
-          .filter(function (key) { return key !== VERSION; })
+          .filter(function (key) {
+            /* alte Versionen DIESER App löschen … */
+            if (key.indexOf(PREFIX) === 0 && key !== VERSION) {
+              return true;
+            }
+            /* … und den Speicher der allerersten Version (v1) */
+            return /^klanglandschaft-v\d+$/.test(key);
+          })
           .map(function (key) { return caches.delete(key); })
       );
     }).then(function () {

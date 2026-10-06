@@ -1,0 +1,4916 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Klanglandschaft</title>
+
+<!-- App-Einstellungen -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f2f0e9">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Klanglandschaft">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
+<!-- Schrift -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+
+<style>
+/* =====================================================
+   GRUNDWERTE
+   Ein Strich (2px), eine Tinte, ein Papier.
+   ===================================================== */
+
+#klanglandschaft {
+  --paper: #f2f0e9;
+  --ink: #141414;
+  --line: 2px;
+
+  /* Abspiellinie: dünner, grau, leicht transparent */
+  --path: #7a7a7a;
+  --path-width: 2.5;
+  --path-opacity: .75;
+
+  --gap: 16px;
+  --bar: 72px;
+  --fundus: 120px;
+}
+
+
+html,
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+
+  width: 100%;
+  height: 100%;
+
+  overflow: hidden;
+
+  background: #f2f0e9;
+}
+
+
+/* =====================================================
+   GESAMTFLÄCHE
+   ===================================================== */
+
+#klanglandschaft {
+  position: relative;
+
+  width: 100vw;
+
+  height: 100vh;
+  height: 100dvh;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  background: var(--paper);
+  color: var(--ink);
+
+  font-family: "Atkinson Hyperlegible", "Trebuchet MS", sans-serif;
+}
+
+
+/* =====================================================
+   FUNDUS
+   Zeichnungen | Farbregler
+   Papierkorb
+   ===================================================== */
+
+#soundpalette {
+  position: absolute;
+
+  left: var(--gap);
+  top: var(--gap);
+  bottom: calc(var(--bar) + 2 * var(--gap));
+
+  width: var(--fundus);
+
+  z-index: 900;
+
+  display: grid;
+
+  grid-template-columns: 1fr 40px;
+  grid-template-rows: 1fr 64px;
+
+  box-sizing: border-box;
+
+  border: var(--line) solid var(--ink);
+
+  background: var(--paper);
+
+  touch-action: none;
+
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+
+/* Zeichnungen: eine senkrechte Reihe, mittig */
+
+#paletteIcons {
+  grid-column: 1;
+  grid-row: 1;
+
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: space-around;
+  align-items: center;
+
+  padding: 8px 0;
+
+  box-sizing: border-box;
+}
+
+
+/* Farbregler mit "hoch" und "tief" */
+
+#pitchColumn {
+  grid-column: 2;
+  grid-row: 1;
+
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 14px 10px 14px 0;
+}
+
+
+.pitchLabel {
+  font-size: 11px;
+  line-height: 1;
+}
+
+
+#pitchSlider {
+  position: relative;
+
+  flex: 1 1 auto;
+
+  width: 14px;
+
+  box-sizing: border-box;
+
+  border: var(--line) solid var(--ink);
+
+  background: linear-gradient(to bottom, #f15060, #0078bf);
+
+  cursor: pointer;
+
+  touch-action: none;
+
+  outline: none;
+}
+
+
+#pitchThumb {
+  position: absolute;
+
+  left: -9px;
+  width: 28px;
+
+  top: calc((100 - var(--pv, 50)) * 1%);
+
+  height: 14px;
+
+  transform: translateY(-50%);
+
+  box-sizing: border-box;
+
+  border: var(--line) solid var(--ink);
+
+  background: #7864a8;
+
+  pointer-events: none;
+}
+
+
+#pitchSlider:focus-visible {
+  outline: 2px solid rgba(0,0,0,.4);
+  outline-offset: 4px;
+}
+
+
+/* Papierkorb */
+
+#trash {
+  grid-column: 1 / -1;
+  grid-row: 2;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-top: var(--line) solid var(--ink);
+
+  transition: background .15s;
+}
+
+
+#trash svg {
+  width: 26px;
+  height: 26px;
+
+  fill: none;
+
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+#trash.hover {
+  background: var(--ink);
+}
+
+
+#trash.hover svg {
+  stroke: var(--paper);
+}
+
+
+/* =====================================================
+   PARTITUR – leere Fläche
+   ===================================================== */
+
+#landscape {
+  position: relative;
+
+  margin-left: calc(var(--fundus) + 2 * var(--gap));
+  margin-top: var(--gap);
+  margin-right: var(--gap);
+
+  flex: 1 1 auto;
+
+  min-height: 0;
+
+  overflow: hidden;
+
+  background: var(--paper);
+
+  touch-action: none;
+
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+
+/* =====================================================
+   TITEL DES STÜCKS (oben links auf der Partitur)
+   ===================================================== */
+
+#scoreTitle {
+  position: absolute;
+
+  left: 12px;
+  top: 8px;
+
+  z-index: 800;
+
+  width: min(60%, 360px);
+
+  margin: 0;
+  padding: 2px 0;
+
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+
+  background: transparent;
+
+  color: var(--ink);
+
+  font: 700 16px/1.3 "Atkinson Hyperlegible", "Trebuchet MS", sans-serif;
+
+  outline: none;
+
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+
+#scoreTitle::placeholder {
+  color: rgba(20,20,20,.35);
+  font-weight: 400;
+}
+
+
+#scoreTitle:focus {
+  border-bottom-color: var(--ink);
+}
+
+
+/* =====================================================
+   HANDY HOCHKANT: Hinweis "quer halten"
+   ===================================================== */
+
+#rotateHint {
+  display: none;
+}
+
+
+/* =====================================================
+   FREIE ABSPIELLINIE
+   Immer ÜBER den Klangzeichen.
+   ===================================================== */
+
+#pathLayer {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  z-index: 700;
+
+  overflow: visible;
+
+  pointer-events: none;
+}
+
+
+#drawnPath {
+  fill: none;
+
+  stroke: var(--path);
+
+  stroke-width: var(--path-width);
+
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  vector-effect: non-scaling-stroke;
+
+  opacity: var(--path-opacity);
+}
+
+
+#pathHead {
+  fill: var(--path);
+
+  opacity: 0;
+
+  vector-effect: non-scaling-stroke;
+
+  pointer-events: none;
+}
+
+
+#landscape.drawing {
+  cursor: crosshair;
+}
+
+
+/* =====================================================
+   KLANGZEICHEN
+   ===================================================== */
+
+.step {
+  position: absolute;
+
+  display: block;
+
+  transform: translate(-50%, -50%);
+
+  transform-origin: center;
+
+  scale: var(--sound-scale, 1);
+
+  opacity: .22;
+
+  cursor: grab;
+
+  z-index: 10;
+
+  touch-action: none;
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+
+.step.active {
+  opacity: 1;
+}
+
+
+/* Wie Druckfarben: Überlagerungen mischen sich (Rot über Blau = Violett) */
+
+#landscape .step {
+  mix-blend-mode: multiply;
+}
+
+
+/* Kurzes Aufhellen, wenn ein Zeichen klingt */
+
+#landscape .step.hit {
+  animation: hit .35s ease-out;
+}
+
+@keyframes hit {
+  0%   { filter: brightness(1.75); }
+  100% { filter: brightness(1); }
+}
+
+
+.step.dragging {
+  cursor: grabbing;
+
+  z-index: 500;
+
+  opacity: 1;
+
+  filter: drop-shadow(0 5px 5px rgba(0,0,0,.25));
+}
+
+
+.palette-item {
+  position: relative !important;
+
+  left: auto !important;
+  top: auto !important;
+
+  flex: 0 0 auto;
+
+  transform: none !important;
+
+  scale: 1 !important;
+
+  opacity: 1 !important;
+
+  cursor: grab;
+}
+
+
+/* =====================================================
+   WAAGERECHTER PLAYHEAD
+   ===================================================== */
+
+#playline {
+  position: absolute;
+
+  top: 0;
+  bottom: 0;
+
+  left: 0;
+
+  width: 2px;
+
+  background: var(--path);
+
+  opacity: 0;
+
+  pointer-events: none;
+
+  z-index: 750;
+}
+
+
+/* =====================================================
+   BEDIENLEISTE
+   Eine durchgehende Leiste, Fächer teilen sich die Linien.
+   ===================================================== */
+
+#controls {
+  position: relative;
+
+  z-index: 1000;
+
+  flex: 0 0 var(--bar);
+
+  height: var(--bar);
+
+  margin: var(--gap);
+
+  display: flex;
+
+  align-items: stretch;
+
+  box-sizing: border-box;
+
+  border: var(--line) solid var(--ink);
+
+  background: var(--paper);
+}
+
+
+#controls button {
+  flex: 0 0 72px;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  border: 0;
+  border-left: var(--line) solid var(--ink);
+  border-radius: 0;
+
+  background: transparent;
+
+  color: var(--ink);
+
+  display: flex !important;
+
+  align-items: center !important;
+  justify-content: center !important;
+
+  cursor: pointer;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+
+#controls button:first-child {
+  border-left: 0;
+}
+
+
+/* versteckte Knöpfe (z. B. Vollbild auf iPhones) */
+
+#controls button[hidden] {
+  display: none !important;
+}
+
+
+/* Vollbild: Icon wechselt */
+
+#fullscreen .iconExit {
+  display: none;
+}
+
+#fullscreen.is-full .iconEnter {
+  display: none;
+}
+
+#fullscreen.is-full .iconExit {
+  display: block;
+}
+
+
+#controls button:disabled {
+  cursor: default;
+}
+
+
+#controls button:disabled .icon {
+  opacity: .25;
+}
+
+
+#controls .icon {
+  width: 26px;
+  height: 26px;
+
+  fill: none;
+
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+/* Aktiv = umgekehrt */
+
+#controls button.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+
+/* =====================================================
+   SPIELEN / STOPP – ein Knopf
+   ===================================================== */
+
+#play {
+  flex-basis: 96px !important;
+
+  background: var(--ink) !important;
+  color: var(--paper) !important;
+}
+
+
+#play svg {
+  width: 28px;
+  height: 28px;
+
+  fill: currentColor;
+}
+
+
+#play .iconStop {
+  display: none;
+}
+
+
+#play.playing .iconPlay {
+  display: none;
+}
+
+
+#play.playing .iconStop {
+  display: block;
+}
+
+
+/* =====================================================
+   TEMPO
+   ===================================================== */
+
+#tempoGroup {
+  flex: 1 1 auto;
+
+  min-width: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 16px;
+
+  padding: 0 24px;
+
+  border-left: var(--line) solid var(--ink);
+
+  font-size: 13px;
+}
+
+
+.tempoLabel {
+  flex: 0 0 auto;
+}
+
+
+#tempoValue {
+  flex: 0 0 auto;
+
+  min-width: 64px;
+
+  text-align: right;
+
+  font-weight: 700;
+
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* Schieberegler: Linie + eckiger Griff */
+
+#tempo {
+  flex: 1 1 auto;
+
+  min-width: 40px;
+
+  height: 28px;
+
+  margin: 0;
+
+  background: transparent;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  cursor: pointer;
+}
+
+
+#tempo::-webkit-slider-runnable-track {
+  height: 2px;
+
+  background: var(--ink);
+}
+
+
+#tempo::-webkit-slider-thumb {
+  -webkit-appearance: none;
+
+  width: 16px;
+  height: 28px;
+
+  margin-top: -13px;
+
+  box-sizing: border-box;
+
+  border: 2px solid var(--ink);
+  border-radius: 0;
+
+  background: var(--paper);
+}
+
+
+#tempo::-moz-range-track {
+  height: 2px;
+
+  background: var(--ink);
+}
+
+
+#tempo::-moz-range-thumb {
+  width: 16px;
+  height: 28px;
+
+  box-sizing: border-box;
+
+  border: 2px solid var(--ink);
+  border-radius: 0;
+
+  background: var(--paper);
+}
+
+
+/* =====================================================
+   AUFNAHME (nur Seite mit Mikrofon-Knopf)
+   ===================================================== */
+
+/* Aufnahme-Modus: Zeichen im Fundus rot gestrichelt umrandet */
+
+#klanglandschaft.record-mode .palette-item {
+  outline: 2px dashed #e4572e;
+  outline-offset: 6px;
+
+  cursor: pointer;
+}
+
+
+/* Während der Aufnahme: kräftiger, pulsierender Rahmen */
+
+#klanglandschaft .palette-item.recording {
+  outline: 3px solid #e4572e;
+  outline-offset: 6px;
+
+  animation: recPulse .7s ease-in-out infinite alternate;
+}
+
+
+@keyframes recPulse {
+  from { outline-color: #e4572e; }
+  to   { outline-color: rgba(228, 87, 46, .25); }
+}
+
+
+/* =====================================================
+   MELDUNG
+   ===================================================== */
+
+#scoreMessage {
+  position: absolute;
+
+  left: 50%;
+  bottom: calc(var(--bar) + 2 * var(--gap) + 12px);
+
+  transform: translateX(-50%);
+
+  z-index: 1100;
+
+  padding: 8px 14px;
+
+  background: var(--ink);
+
+  color: var(--paper);
+
+  font-size: 13px;
+
+  white-space: nowrap;
+
+  opacity: 0;
+
+  pointer-events: none;
+
+  transition: opacity .25s;
+}
+
+
+#scoreMessage.visible {
+  opacity: 1;
+}
+
+
+/* =====================================================
+   BILD AUF DIE PARTITUR ZIEHEN
+   ===================================================== */
+
+#klanglandschaft.dropping #landscape {
+  outline: 3px dashed rgba(0,0,0,.35);
+  outline-offset: -10px;
+}
+
+
+/* =====================================================
+   TABLET HOCHKANT / SMARTPHONE
+   ===================================================== */
+
+@media (max-width: 760px) {
+
+  #klanglandschaft {
+    --gap: 8px;
+    --bar: 56px;
+    --fundus: 92px;
+  }
+
+  #soundpalette {
+    grid-template-columns: 1fr 32px;
+    grid-template-rows: 1fr 52px;
+  }
+
+  #pitchColumn {
+    padding: 12px 8px 12px 0;
+  }
+
+  #controls button {
+    flex-basis: 52px;
+  }
+
+  #play {
+    flex-basis: 64px !important;
+  }
+
+  #tempoGroup {
+    gap: 10px;
+    padding: 0 12px;
+  }
+
+  .tempoLabel {
+    display: none;
+  }
+
+  #tempoValue {
+    min-width: 0;
+    font-size: 12px;
+  }
+
+  #scoreMessage {
+    white-space: normal;
+    width: max-content;
+    max-width: 80vw;
+    text-align: center;
+  }
+
+}
+
+
+@media (max-width: 420px) {
+
+  #controls button {
+    flex-basis: 44px;
+  }
+
+  #play {
+    flex-basis: 52px !important;
+  }
+
+  #tempoValue {
+    display: none;
+  }
+
+}
+
+
+/* =====================================================
+   HANDY QUER
+   Höhe ist knapp: Fundus links (2 Spalten),
+   Bedienung rechts als senkrechte Leiste,
+   Partitur bekommt die ganze Mitte.
+   ===================================================== */
+
+@media (orientation: landscape) and (max-height: 500px) {
+
+  #klanglandschaft {
+    --gap: 8px;
+    --fundus: 112px;
+    --side: 60px;
+
+    flex-direction: row;
+  }
+
+
+  /* ---------- Fundus ---------- */
+
+  #soundpalette {
+    bottom: var(--gap);
+
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 40px 44px;
+  }
+
+  #paletteIcons {
+    grid-column: 1;
+    grid-row: 1;
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    align-content: space-evenly;
+    justify-items: center;
+
+    padding: 4px;
+  }
+
+  #pitchColumn {
+    grid-column: 1;
+    grid-row: 2;
+
+    flex-direction: row-reverse;   /* tief links, hoch rechts */
+
+    gap: 6px;
+
+    padding: 0 8px;
+
+    border-top: var(--line) solid var(--ink);
+  }
+
+  .pitchLabel {
+    font-size: 10px;
+  }
+
+  #pitchSlider {
+    flex: 1 1 auto;
+
+    width: auto;
+    height: 12px;
+
+    background: linear-gradient(to right, #0078bf, #f15060);
+  }
+
+  #pitchThumb {
+    top: -8px;
+    left: calc(var(--pv, 50) * 1%);
+
+    width: 12px;
+    height: 24px;
+
+    transform: translateX(-50%);
+  }
+
+  #trash {
+    grid-row: 3;
+  }
+
+  #trash svg {
+    width: 22px;
+    height: 22px;
+  }
+
+
+  /* ---------- Partitur ---------- */
+
+  #landscape {
+    margin: var(--gap) 0 var(--gap) calc(var(--fundus) + 2 * var(--gap));
+  }
+
+  #scoreTitle {
+    left: 8px;
+    top: 4px;
+
+    font-size: 13px;
+  }
+
+
+  /* ---------- Bedienung rechts ---------- */
+
+  #controls {
+    flex: 0 0 var(--side);
+
+    width: var(--side);
+    height: auto;
+
+    margin: var(--gap);
+
+    flex-direction: column;
+  }
+
+  #controls button {
+    flex: 1 1 44px;
+
+    min-height: 32px;
+
+    border-left: 0;
+    border-top: var(--line) solid var(--ink);
+  }
+
+  #controls button:first-child {
+    border-top: 0;
+  }
+
+  #play {
+    flex: 1.3 1 52px !important;
+  }
+
+  #controls .icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  #play svg {
+    width: 24px;
+    height: 24px;
+  }
+
+
+  /* Tempo: nur die Zahl – antippen öffnet den Regler */
+
+  #tempoGroup {
+    flex: 1 1 44px;
+
+    min-height: 36px;
+
+    flex-direction: column;
+    justify-content: center;
+
+    gap: 0;
+
+    padding: 0;
+
+    border-left: 0;
+    border-top: var(--line) solid var(--ink);
+
+    cursor: pointer;
+  }
+
+  .tempoLabel {
+    display: none;
+  }
+
+  #tempoValue {
+    display: block;
+
+    min-width: 0;
+
+    padding: 0 4px;
+
+    text-align: center;
+
+    font-size: 12px;
+    line-height: 1.15;
+  }
+
+  #tempo {
+    display: none;
+  }
+
+  #tempoGroup.open #tempo {
+    display: block;
+
+    position: fixed;
+
+    top: 50%;
+    right: calc(var(--side) + 2 * var(--gap) + 8px);
+
+    width: min(50vw, 360px);
+    height: 52px;
+
+    transform: translateY(-50%);
+
+    padding: 0 16px;
+
+    box-sizing: border-box;
+
+    border: var(--line) solid var(--ink);
+
+    background: var(--paper);
+
+    z-index: 1200;
+  }
+
+
+  /* ---------- Meldung ---------- */
+
+  #scoreMessage {
+    bottom: calc(var(--gap) + 12px);
+  }
+
+}
+
+
+/* =====================================================
+   HANDY HOCHKANT
+   Zum Komponieren zu schmal: freundlicher Hinweis.
+   ===================================================== */
+
+@media (orientation: portrait) and (max-width: 600px) {
+
+  #soundpalette,
+  #landscape,
+  #controls {
+    display: none !important;
+  }
+
+  #rotateHint {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 24px;
+
+    padding: 40px;
+
+    text-align: center;
+  }
+
+  #rotateHint svg {
+    width: 110px;
+    height: 110px;
+
+    fill: none;
+
+    stroke: var(--ink);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  #rotateHint p {
+    margin: 0;
+
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+}
+
+</style>
+</head>
+<body>
+
+<div id="klanglandschaft">
+
+  <div id="soundpalette">
+
+    <div id="paletteIcons"></div>
+
+    <div id="pitchColumn">
+
+      <span class="pitchLabel">hoch</span>
+
+      <div id="pitchSlider" role="slider" tabindex="0"
+           aria-label="Farbe und Tonhöhe" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"
+           title="Farbe & Tonhöhe (Doppeltippen = Mitte)">
+        <div id="pitchThumb"></div>
+      </div>
+
+      <span class="pitchLabel">tief</span>
+
+    </div>
+
+    <div id="trash" title="Zeichen hierher ziehen zum Löschen" aria-label="Papierkorb">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 7h16"></path>
+        <path d="M9 7V4h6v3"></path>
+        <path d="M6 7l1 13h10l1-13"></path>
+        <path d="M10 11v6M14 11v6"></path>
+      </svg>
+    </div>
+
+  </div>
+
+
+  <div id="landscape">
+
+    <input id="scoreTitle" type="text" maxlength="40" placeholder="Titel des Stücks" aria-label="Titel des Stücks" autocomplete="off" spellcheck="false">
+
+    <svg id="pathLayer" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+
+      <polyline id="drawnPath"></polyline>
+
+      <circle id="pathHead" cx="0" cy="0" r="6"></circle>
+
+    </svg>
+
+    <div id="playline"></div>
+
+  </div>
+
+
+  <div id="controls">
+
+    <button class="controlButton" id="play" title="Spielen / Stopp" aria-label="Spielen">
+      <svg class="iconPlay" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 4.5l13 7.5-13 7.5z"></path>
+      </svg>
+      <svg class="iconStop" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="6" y="6" width="12" height="12"></rect>
+      </svg>
+    </button>
+
+    <button class="controlButton" id="drawPath" title="Abspiellinie zeichnen" aria-label="Abspiellinie zeichnen">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 20l1.2-4.8L15.5 4.9a2 2 0 0 1 2.8 0l.8.8a2 2 0 0 1 0 2.8L8.8 18.8z"></path>
+        <path d="M13.5 7l3.5 3.5"></path>
+      </svg>
+    </button>
+
+    <button class="controlButton" id="undo" title="Rückgängig" aria-label="Rückgängig">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 4L5 8l4 4"></path>
+        <path d="M5 8h10a5 5 0 0 1 0 10H9"></path>
+      </svg>
+    </button>
+
+    <button class="controlButton" id="resetScore" title="Alles löschen" aria-label="Alles löschen">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 6l12 12"></path>
+        <path d="M18 6L6 18"></path>
+      </svg>
+    </button>
+
+    <div id="tempoGroup">
+
+      <span class="tempoLabel">langsam</span>
+
+      <input id="tempo" type="range" min="50" max="160" value="90" aria-label="Tempo">
+
+      <span class="tempoLabel">schnell</span>
+
+      <span id="tempoValue">90 BPM</span>
+
+    </div>
+
+    <button class="controlButton" id="saveImage" title="Partitur als Bild speichern" aria-label="Bild speichern">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 4v11"></path>
+        <path d="M7 10l5 5 5-5"></path>
+        <path d="M5 20h14"></path>
+      </svg>
+    </button>
+
+    <button class="controlButton" id="openImage" title="Partitur aus Bild laden" aria-label="Bild öffnen">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 15V4"></path>
+        <path d="M7 9l5-5 5 5"></path>
+        <path d="M5 20h14"></path>
+      </svg>
+    </button>
+
+    <input id="imageInput" type="file" accept="image/png" hidden>
+
+    <button class="controlButton" id="fullscreen" title="Vollbild" aria-label="Vollbild" hidden>
+      <svg class="icon iconEnter" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 9V4h5"></path>
+        <path d="M15 4h5v5"></path>
+        <path d="M20 15v5h-5"></path>
+        <path d="M9 20H4v-5"></path>
+      </svg>
+      <svg class="icon iconExit" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 4v5H4"></path>
+        <path d="M20 9h-5V4"></path>
+        <path d="M15 20v-5h5"></path>
+        <path d="M4 15h5v5"></path>
+      </svg>
+    </button>
+
+  </div>
+
+
+  <div id="rotateHint">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <rect x="44" y="20" width="32" height="56" rx="4"></rect>
+      <rect x="32" y="66" width="56" height="32" rx="4" stroke-dasharray="5 6"></rect>
+      <path d="M86 34a30 30 0 0 1 10 26"></path>
+      <path d="M90 56l6 6 5-7"></path>
+    </svg>
+    <p>Handy quer halten</p>
+  </div>
+
+
+  <div id="scoreMessage"></div>
+
+</div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+
+/* =========================================================
+   KONFIGURATION – GRUPPEN
+
+   Jede Gruppe hat eine eigene Liste von Klangzeichen.
+   Welche Gruppe geladen wird, steht in der Adresse:
+
+     klanggeraeusche.cargo.site/?gruppe=a
+     klanggeraeusche.cargo.site/?gruppe=b
+
+   Ohne Angabe wird die ERSTE Gruppe geladen.
+
+   Gruppennamen: nur Kleinbuchstaben, Zahlen, - und _
+   (keine Leerzeichen, keine Umlaute).
+
+   Jede Zeile = ein Klangzeichen:
+   bild  = Zeichnung (PNG oder JPG, heller oder
+           transparenter Hintergrund)
+   klang = Sounddatei (mp3)
+
+   Beliebig viele Zeilen möglich.
+   Leere Bild-Adresse "" = Platzhalter mit Nummer.
+
+   Neue Gruppe anlegen: den Block von "standard"
+   kopieren, umbenennen (z. B. "a") und die Adressen
+   austauschen. Komma zwischen den Gruppen nicht vergessen.
+   ========================================================= */
+
+const GRUPPEN = {
+
+  "standard": [
+
+    { // 1
+      bild:  "grafiken/01-spirale.png",
+      klang: "https://freight.cargo.site/m/K3142575085704848764014052702319/21kb808-bd01.wav.mp3"
+    },
+
+    { // 2
+      bild:  "grafiken/02-knaeuel.png",
+      klang: "https://freight.cargo.site/m/N3142575085833975972530019563631/24kb808-hh03.wav.mp3"
+    },
+
+    { // 3
+      bild:  "grafiken/03-punktfeld.png",
+      klang: "https://freight.cargo.site/m/A3142575085963103181045986424943/34kb808-sd02.wav.mp3"
+    },
+
+    { // 4
+      bild:  "grafiken/04-zickzack.png",
+      klang: "https://freight.cargo.site/m/W3142575085981549925119695976559/44kb808-tme3.wav.mp3"
+    },
+
+    { // 5
+      bild:  "grafiken/05-welle.png",
+      klang: "https://freight.cargo.site/m/G3142575085999996669193405528175/45kb808-cme1.wav.mp3"
+    },
+
+    { // 6
+      bild:  "grafiken/06-schraffur.png",
+      klang: "https://freight.cargo.site/m/B3142575086036890157340824631407/54kb808-thi3.wav.mp3"
+    },
+
+    { // 7
+      bild:  "grafiken/07-ringe.png",
+      klang: "https://freight.cargo.site/m/O3142575086073783645488243734639/67kb808-clap4.wav.mp3"
+    },
+
+    { // 8
+      bild:  "grafiken/08-strahlen.png",
+      klang: "https://freight.cargo.site/m/Q3142575086110677133635662837871/367kb808-cym05.wav.mp3"
+    }
+
+  ],
+
+
+  /* BEISPIEL – zum Benutzen die Kommentarzeichen
+     davor und dahinter entfernen:
+
+  "a": [
+
+    { // 1
+      bild:  "https://freight.cargo.site/.../zeichnung1.png",
+      klang: "https://freight.cargo.site/.../klang1.mp3"
+    },
+
+    { // 2
+      bild:  "https://freight.cargo.site/.../zeichnung2.png",
+      klang: "https://freight.cargo.site/.../klang2.mp3"
+    }
+
+  ],
+
+  */
+
+};
+
+
+/* Gruppe aus der Adresse lesen */
+
+const GRUPPE = (function () {
+
+  let key = "";
+
+  try {
+    key = new URLSearchParams(location.search).get("gruppe") || "";
+  }
+  catch (e) {}
+
+  if (!key) {
+    const m = location.hash.match(/gruppe=([\w-]+)/);
+    key = m ? m[1] : "";
+  }
+
+  key = key.toLowerCase();
+
+  return GRUPPEN[key] ? key : Object.keys(GRUPPEN)[0];
+
+})();
+
+const SOUNDS = GRUPPEN[GRUPPE];
+
+
+/* ---------- Farbe & Tonhöhe ---------- */
+
+/* Der Farbregler neben dem Fundus mischt zwischen
+   Rot (oben) und Blau (unten). Jedes neue Zeichen
+   bekommt die gerade eingestellte Farbe – und damit
+   seine Tonhöhe:
+   Rot = höher, Blau = tiefer, Mitte = Originalhöhe.
+   false = Regler ausblenden, Zeichen bleiben schwarz. */
+
+const PITCH_ON = true;
+
+/* Spannweite in Halbtönen nach oben und nach unten.
+   12 = eine Oktave. */
+
+const PITCH_SEMITONES = 12;
+
+/* Farben wie Risograph-Druckfarben: überlagern sich
+   auf der Fläche wie Druckfarben (Rot über Blau = Violett). */
+
+const COLOR_HIGH = [241, 80, 96];    // Rot  (hoch)
+const COLOR_LOW  = [0, 120, 191];    // Blau (tief)
+const COLOR_OFF  = [17, 17, 17];     // ohne Farbregler
+
+
+/* ---------- Raster & Bedienung ---------- */
+
+const ROWS = SOUNDS.length;
+
+const GRID_STEPS = 16;
+const SUBDIVISIONS = 8;
+const TICKS = GRID_STEPS * SUBDIVISIONS;
+
+const SYMBOL_SIZE = 46;        // längste Seite eines Zeichens in px
+const MASK_SIZE = 256;         // interne Auflösung der Zeichnungen
+
+const HOLD_TIME = 380;
+const PAINT_DISTANCE = 22;
+const PALETTE_DRAG_DISTANCE = 10;
+
+const MIN_SCALE = 0.30;
+const MAX_SCALE = 5.00;
+
+const PATH_SAMPLE_DISTANCE = 3;
+const SIMPLIFY_TOLERANCE = 5;
+
+const LOOKAHEAD = 0.12;        // Sekunden im Voraus planen
+const SCHEDULE_INTERVAL = 25;  // ms
+
+
+/* =========================================================
+   DOM
+   ========================================================= */
+
+const app = document.getElementById("klanglandschaft");
+const landscape = document.getElementById("landscape");
+const palette = document.getElementById("soundpalette");
+const paletteIcons = document.getElementById("paletteIcons");
+const pitchSlider = document.getElementById("pitchSlider");
+const pitchThumb = document.getElementById("pitchThumb");
+const trash = document.getElementById("trash");
+const playline = document.getElementById("playline");
+
+const playButton = document.getElementById("play");
+const stopButton = document.getElementById("stop");
+const drawButton = document.getElementById("drawPath");
+const resetButton = document.getElementById("resetScore");
+const undoButton = document.getElementById("undo");
+const saveImageButton = document.getElementById("saveImage");
+const openImageButton = document.getElementById("openImage");
+const imageInput = document.getElementById("imageInput");
+const micButton = document.getElementById("mic");
+const scoreTitle = document.getElementById("scoreTitle");
+const tempoGroup = document.getElementById("tempoGroup");
+const fullscreenButton = document.getElementById("fullscreen");
+
+/* Aufnahme nur auf Seiten, deren HTML den Mikrofon-Knopf hat */
+const RECORDING_ENABLED = !!micButton;
+
+const tempoSlider = document.getElementById("tempo");
+const tempoValue = document.getElementById("tempoValue");
+
+const drawnPath = document.getElementById("drawnPath");
+const pathHead = document.getElementById("pathHead");
+
+const scoreMessage = document.getElementById("scoreMessage");
+
+
+if (!landscape || !palette || !paletteIcons) {
+  return;
+}
+
+
+/* =========================================================
+   MELDUNG
+   ========================================================= */
+
+let messageTimer = null;
+
+function showMessage(text) {
+
+  if (!scoreMessage) {
+    return;
+  }
+
+  scoreMessage.textContent = text;
+  scoreMessage.classList.add("visible");
+
+  clearTimeout(messageTimer);
+
+  messageTimer = setTimeout(function () {
+    scoreMessage.classList.remove("visible");
+  }, 3000);
+
+}
+
+
+/* =========================================================
+   AUDIO
+   ========================================================= */
+
+const AC = window.AudioContext || window.webkitAudioContext;
+
+const audioContext = new AC();
+
+const buffers = new Array(ROWS).fill(null);
+
+const masterGain = audioContext.createGain();
+
+
+/* Begrenzer: Wenn viele Klänge gleichzeitig spielen,
+   wird es nicht verzerrt, sondern nur sanft gebremst. */
+
+const limiter = audioContext.createDynamicsCompressor();
+
+limiter.threshold.value = -6;
+limiter.knee.value = 6;
+limiter.ratio.value = 12;
+limiter.attack.value = 0.003;
+limiter.release.value = 0.25;
+
+masterGain.connect(limiter);
+limiter.connect(audioContext.destination);
+
+
+const recordedRows = new Set();   // Zeichen mit eigener Aufnahme
+
+async function loadSound(url, row) {
+
+  try {
+    const response = await fetch(url);
+    const data = await response.arrayBuffer();
+    const decoded = await audioContext.decodeAudioData(data);
+
+    if (!recordedRows.has(row)) {
+      buffers[row] = decoded;
+    }
+  }
+
+  catch (error) {
+    console.error("Sound konnte nicht geladen werden:", url, error);
+  }
+
+}
+
+SOUNDS.forEach(function (entry, row) {
+  if (entry.klang) {
+    loadSound(entry.klang, row);
+  }
+});
+
+
+/* when = Zeitpunkt auf der Audio-Uhr (0 = sofort) */
+
+function playSound(row, volume, rate, when) {
+
+  if (!buffers[row]) {
+    return false;
+  }
+
+  const source = audioContext.createBufferSource();
+  const gain = audioContext.createGain();
+
+  source.buffer = buffers[row];
+  source.playbackRate.value = rate || 1;
+
+  gain.gain.value = volume === undefined ? 0.35 : volume;
+
+  source.connect(gain);
+  gain.connect(masterGain);
+
+  source.start(when || 0);
+
+  return true;
+
+}
+
+
+async function resumeAudio() {
+
+  if (audioContext.state === "suspended") {
+    try { await audioContext.resume(); } catch (e) {}
+  }
+
+}
+
+
+/* =========================================================
+   FARBREGLER → TONHÖHE & FARBE
+
+   Wert 0–100:  100 = Rot/hoch,  50 = Mitte,  0 = Blau/tief
+   ========================================================= */
+
+let currentPitch = 50;
+
+
+function rateFromPitch(value) {
+
+  if (!PITCH_ON) {
+    return 1;
+  }
+
+  const v = Math.max(-1, Math.min(1, (value - 50) / 50));
+
+  return Math.pow(2, v * PITCH_SEMITONES / 12);
+
+}
+
+
+function mix(a, b, t) {
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t)
+  ];
+}
+
+
+function colorFromPitch(value) {
+
+  if (!PITCH_ON) {
+    return "rgb(" + COLOR_OFF.join(",") + ")";
+  }
+
+  const t = Math.max(0, Math.min(1, value / 100));
+
+  return "rgb(" + mix(COLOR_LOW, COLOR_HIGH, t).join(",") + ")";
+
+}
+
+
+/* =========================================================
+   GRÖSSE → LAUTSTÄRKE
+   ========================================================= */
+
+function scaleToVolume(scale) {
+
+  let normalized = (scale - MIN_SCALE) / (MAX_SCALE - MIN_SCALE);
+
+  normalized = Math.max(0, Math.min(1, normalized));
+
+  return 0.02 + Math.pow(normalized, 1.7) * 1.48;
+
+}
+
+
+function setScale(cell, scale) {
+
+  if (!cell) {
+    return;
+  }
+
+  scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
+
+  cell.dataset.scale = scale;
+  cell.dataset.volume = scaleToVolume(scale);
+
+  cell.style.setProperty("--sound-scale", scale);
+
+}
+
+
+/* =========================================================
+   ZEICHNUNGEN LADEN
+
+   Jede Zeichnung wird in eine "Maske" umgewandelt:
+   dunkle Striche bleiben, heller Hintergrund verschwindet.
+   So funktionieren auch JPGs und abfotografierte Blätter.
+   Die Maske wird dann je nach Höhe eingefärbt.
+   ========================================================= */
+
+const masks = new Array(ROWS).fill(null);
+
+
+/* Platzhalter: Kreis mit Nummer */
+
+function makeFallbackMask(row) {
+
+  const canvas = document.createElement("canvas");
+
+  canvas.width = 128;
+  canvas.height = 128;
+
+  const ctx = canvas.getContext("2d");
+
+  ctx.strokeStyle = "#000";
+  ctx.fillStyle = "#000";
+  ctx.lineWidth = 9;
+
+  ctx.beginPath();
+  ctx.arc(64, 64, 54, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.font = "bold 58px Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(String(row + 1), 64, 68);
+
+  canvas.tainted = false;
+
+  return canvas;
+
+}
+
+
+function loadImage(url, withCors) {
+
+  return new Promise(function (resolve, reject) {
+
+    const img = new Image();
+
+    if (withCors) {
+      img.crossOrigin = "anonymous";
+    }
+
+    img.onload = function () { resolve(img); };
+    img.onerror = reject;
+
+    img.src = url;
+
+  });
+
+}
+
+
+function imageToMask(img, readable) {
+
+  const factor = MASK_SIZE / Math.max(img.naturalWidth, img.naturalHeight);
+
+  const canvas = document.createElement("canvas");
+
+  canvas.width = Math.max(1, Math.round(img.naturalWidth * factor));
+  canvas.height = Math.max(1, Math.round(img.naturalHeight * factor));
+
+  const ctx = canvas.getContext("2d");
+
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  canvas.tainted = !readable;
+
+  if (!readable) {
+    return canvas;
+  }
+
+
+  /* Helligkeit → Deckkraft */
+
+  const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const px = data.data;
+
+  for (let i = 0; i < px.length; i += 4) {
+
+    const lum = (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) / 255;
+
+    const ink = Math.max(0, Math.min(1, (1 - lum) * 1.3));
+
+    px[i] = 0;
+    px[i + 1] = 0;
+    px[i + 2] = 0;
+    px[i + 3] = Math.round(px[i + 3] * ink);
+
+  }
+
+  ctx.putImageData(data, 0, 0);
+
+  return canvas;
+
+}
+
+
+async function loadMask(row) {
+
+  masks[row] = makeFallbackMask(row);
+
+  const url = SOUNDS[row].bild;
+
+  if (!url) {
+    redrawRow(row);
+    return;
+  }
+
+  try {
+    const img = await loadImage(url, true);
+    masks[row] = imageToMask(img, true);
+  }
+
+  catch (e) {
+
+    /* Ohne Freigabe: anzeigen geht, Bild-Export nicht */
+
+    try {
+      const img = await loadImage(url, false);
+      masks[row] = imageToMask(img, false);
+    }
+
+    catch (e2) {
+      console.error("Bild konnte nicht geladen werden:", url);
+    }
+
+  }
+
+  redrawRow(row);
+
+}
+
+
+/* =========================================================
+   ZEICHEN DARSTELLEN
+   ========================================================= */
+
+let paletteSize = SYMBOL_SIZE;
+
+
+function drawCell(cell) {
+
+  const row = Number(cell.dataset.row);
+  const mask = masks[row];
+
+  if (!mask) {
+    return;
+  }
+
+  const isPalette = cell.classList.contains("palette-item");
+
+  const color = isPalette
+    ? colorFromPitch(currentPitch)
+    : colorFromPitch(Number(cell.dataset.pitch === undefined ? 50 : cell.dataset.pitch));
+
+
+  /* Anzeigegröße aus dem Seitenverhältnis */
+
+  const base = isPalette ? paletteSize : SYMBOL_SIZE;
+  const aspect = mask.width / mask.height;
+
+  const w = aspect >= 1 ? base : base * aspect;
+  const h = aspect >= 1 ? base / aspect : base;
+
+  cell.style.width = w + "px";
+  cell.style.height = h + "px";
+
+  cell.dataset.w = w;
+  cell.dataset.h = h;
+
+
+  /* Nur neu malen, wenn sich etwas geändert hat */
+
+  if (cell._mask === mask && cell._color === color) {
+    return;
+  }
+
+  cell._mask = mask;
+  cell._color = color;
+
+  if (cell.width !== mask.width || cell.height !== mask.height) {
+    cell.width = mask.width;
+    cell.height = mask.height;
+  }
+
+  const ctx = cell.getContext("2d");
+
+  ctx.globalCompositeOperation = "source-over";
+  ctx.clearRect(0, 0, cell.width, cell.height);
+
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, cell.width, cell.height);
+
+  ctx.globalCompositeOperation = "destination-in";
+  ctx.drawImage(mask, 0, 0);
+
+  ctx.globalCompositeOperation = "source-over";
+
+}
+
+
+function redrawRow(row) {
+
+  document
+    .querySelectorAll('#klanglandschaft .step[data-row="' + row + '"]')
+    .forEach(drawCell);
+
+}
+
+
+/* =========================================================
+   FUNDUS ERZEUGEN
+   ========================================================= */
+
+for (let row = 0; row < ROWS; row++) {
+
+  const item = document.createElement("canvas");
+
+  item.classList.add("step", "palette-item");
+  item.dataset.row = row;
+
+  paletteIcons.appendChild(item);
+
+}
+
+
+/* Fundus-Größe an die Höhe anpassen */
+
+function updatePaletteSize() {
+
+  /* Handy quer: zwei Spalten, sonst eine */
+
+  const cols = getComputedStyle(paletteIcons).display === "grid" ? 2 : 1;
+  const rows = Math.ceil(ROWS / cols);
+
+  const h = paletteIcons.clientHeight || 400;
+  const w = paletteIcons.clientWidth || 60;
+
+  paletteSize = Math.max(18, Math.min(44, h / rows * 0.72, w / cols * 0.8));
+
+  paletteIcons.querySelectorAll(".palette-item").forEach(drawCell);
+
+}
+
+updatePaletteSize();
+
+for (let row = 0; row < ROWS; row++) {
+  loadMask(row);
+}
+
+
+/* =========================================================
+   FARBREGLER
+   Ziehen oder tippen = Farbe wählen,
+   Doppeltippen = zurück zur Mitte.
+   ========================================================= */
+
+function setPitch(value) {
+
+  currentPitch = Math.max(0, Math.min(100, value));
+
+  if (pitchThumb) {
+    pitchThumb.style.background = colorFromPitch(currentPitch);
+  }
+
+  if (pitchSlider) {
+    /* Position des Griffs regelt das CSS (senkrecht oder waagerecht) */
+    pitchSlider.style.setProperty("--pv", currentPitch);
+    pitchSlider.setAttribute("aria-valuenow", Math.round(currentPitch));
+  }
+
+  paletteIcons.querySelectorAll(".palette-item").forEach(drawCell);
+
+}
+
+
+if (pitchSlider && PITCH_ON) {
+
+  let pitchPointer = null;
+
+  const pitchFromEvent = function (event) {
+
+    const r = pitchSlider.getBoundingClientRect();
+
+    /* waagerecht (Handy quer): links blau, rechts rot */
+    if (r.width > r.height) {
+      return (event.clientX - r.left) / r.width * 100;
+    }
+
+    /* senkrecht: oben rot, unten blau */
+    return (1 - (event.clientY - r.top) / r.height) * 100;
+
+  };
+
+  pitchSlider.addEventListener("pointerdown", function (event) {
+    event.preventDefault();
+    pitchPointer = event.pointerId;
+    try { pitchSlider.setPointerCapture(event.pointerId); } catch (e) {}
+    setPitch(pitchFromEvent(event));
+  });
+
+  pitchSlider.addEventListener("pointermove", function (event) {
+    if (event.pointerId === pitchPointer) {
+      setPitch(pitchFromEvent(event));
+    }
+  });
+
+  const endPitch = function (event) {
+    if (event.pointerId === pitchPointer) {
+      pitchPointer = null;
+      try { pitchSlider.releasePointerCapture(event.pointerId); } catch (e) {}
+    }
+  };
+
+  pitchSlider.addEventListener("pointerup", endPitch);
+  pitchSlider.addEventListener("pointercancel", endPitch);
+
+  pitchSlider.addEventListener("dblclick", function () {
+    setPitch(50);
+  });
+
+  pitchSlider.addEventListener("keydown", function (event) {
+    if (event.key === "ArrowUp" || event.key === "ArrowRight") { setPitch(currentPitch + 5); event.preventDefault(); }
+    if (event.key === "ArrowDown" || event.key === "ArrowLeft") { setPitch(currentPitch - 5); event.preventDefault(); }
+  });
+
+  setPitch(50);
+
+}
+
+else if (pitchSlider) {
+  pitchSlider.style.display = "none";
+}
+
+
+/* =========================================================
+   NEUES KLANGZEICHEN
+   ========================================================= */
+
+function createSoundCell(row) {
+
+  const cell = document.createElement("canvas");
+
+  cell.classList.add("step", "active");
+
+  cell.dataset.row = row;
+  cell.dataset.tick = 0;
+  cell.dataset.y = 50;
+  cell.dataset.pitch = currentPitch;
+
+  setScale(cell, 1);
+
+  landscape.appendChild(cell);
+
+  drawCell(cell);
+
+  return cell;
+
+}
+
+
+/* =========================================================
+   ZEICHEN POSITIONIEREN
+   ========================================================= */
+
+function placeCell(cell, tick, yPercent) {
+
+  tick = Math.max(0, Math.min(TICKS - 1, Math.round(tick)));
+  yPercent = Math.max(0, Math.min(100, yPercent));
+
+  cell.dataset.tick = tick;
+  cell.dataset.y = yPercent;
+
+  cell.style.left = (tick / TICKS * 100) + "%";
+  cell.style.top = yPercent + "%";
+
+  drawCell(cell);
+
+}
+
+
+function positionCell(cell, clientX, clientY) {
+
+  const rect = landscape.getBoundingClientRect();
+
+  const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+  const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+
+  /* X rastet unsichtbar auf 1/8-Unterteilungen. */
+
+  placeCell(
+    cell,
+    x / rect.width * TICKS,
+    y / rect.height * 100
+  );
+
+}
+
+
+/* =========================================================
+   FUNDUS:
+   KURZ ANTIPPEN = KLANG HÖREN
+   ZIEHEN = ZEICHEN ERZEUGEN
+   ========================================================= */
+
+let newCell = null;
+let palettePointer = null;
+let paletteStartX = 0;
+let paletteStartY = 0;
+let paletteRow = null;
+let paletteDragging = false;
+
+
+palette.addEventListener("pointerdown", function (event) {
+
+  const item = event.target.closest(".palette-item");
+
+  if (!item) {
+    return;
+  }
+
+  event.preventDefault();
+
+  resumeAudio();
+
+
+  /* Aufnahme-Modus */
+
+  if (recordMode) {
+
+    recordPointer = event.pointerId;
+
+    try { palette.setPointerCapture(event.pointerId); } catch (e) {}
+
+    startRecordingFor(Number(item.dataset.row), item);
+
+    return;
+
+  }
+
+  palettePointer = event.pointerId;
+  paletteStartX = event.clientX;
+  paletteStartY = event.clientY;
+  paletteRow = Number(item.dataset.row);
+  paletteDragging = false;
+
+  beginChange();
+
+  try { palette.setPointerCapture(event.pointerId); } catch (e) {}
+
+});
+
+
+palette.addEventListener("pointermove", function (event) {
+
+  if (event.pointerId !== palettePointer) {
+    return;
+  }
+
+  const distance = Math.hypot(
+    event.clientX - paletteStartX,
+    event.clientY - paletteStartY
+  );
+
+  if (!paletteDragging && distance >= PALETTE_DRAG_DISTANCE) {
+
+    paletteDragging = true;
+
+    newCell = createSoundCell(paletteRow);
+    newCell.classList.add("dragging");
+
+  }
+
+  if (paletteDragging && newCell) {
+    positionCell(newCell, event.clientX, event.clientY);
+  }
+
+});
+
+
+function resetPaletteState() {
+  newCell = null;
+  palettePointer = null;
+  paletteRow = null;
+  paletteDragging = false;
+}
+
+
+function finishPaletteInteraction(event) {
+
+  if (event.pointerId !== palettePointer) {
+    return;
+  }
+
+  /* Kein Drag: Klang einmal vorhören (in der eingestellten Farbe). */
+
+  if (!paletteDragging) {
+
+    if (!playSound(paletteRow, 0.5, rateFromPitch(currentPitch), 0)) {
+      showMessage("Klang lädt noch …");
+    }
+
+  }
+
+  /* Drag: Zeichen ablegen – außerhalb der Fläche = verwerfen. */
+
+  else if (newCell) {
+
+    const rect = landscape.getBoundingClientRect();
+
+    const inside =
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom;
+
+    if (!inside) {
+      newCell.remove();
+    }
+
+    else {
+      positionCell(newCell, event.clientX, event.clientY);
+      newCell.classList.remove("dragging");
+      selectedCell = newCell;
+    }
+
+  }
+
+  try { palette.releasePointerCapture(event.pointerId); } catch (e) {}
+
+  resetPaletteState();
+
+  endChange();
+
+}
+
+
+let recordPointer = null;
+
+function endRecordGesture(event) {
+
+  if (event.pointerId !== recordPointer) {
+    return false;
+  }
+
+  recordPointer = null;
+
+  try { palette.releasePointerCapture(event.pointerId); } catch (e) {}
+
+  stopRecording();
+
+  return true;
+
+}
+
+palette.addEventListener("pointerup", function (event) {
+
+  if (endRecordGesture(event)) {
+    return;
+  }
+
+  finishPaletteInteraction(event);
+
+});
+
+
+palette.addEventListener("pointercancel", function (event) {
+
+  if (endRecordGesture(event)) {
+    return;
+  }
+
+  if (newCell) {
+    newCell.remove();
+  }
+
+  try { palette.releasePointerCapture(event.pointerId); } catch (e) {}
+
+  resetPaletteState();
+
+  endChange();
+
+});
+
+
+/* =========================================================
+   ZEICHEN AUF DER FLÄCHE
+   ========================================================= */
+
+let selectedCell = null;
+
+let startCell = null;
+let primaryPointer = null;
+let mode = null;
+
+let startX = 0;
+let startY = 0;
+
+let paintValue = true;
+let lastPaintedCell = null;
+let holdTimer = null;
+
+const pointers = new Map();
+
+let pinchCell = null;
+let pinchStartDistance = 0;
+let pinchStartScale = 1;
+
+const DOUBLE_TAP_TIME = 350;
+
+let lastTap = { cell: null, time: 0 };
+
+
+function touchDistance() {
+
+  const points = Array.from(pointers.values());
+
+  if (points.length < 2) {
+    return 0;
+  }
+
+  return Math.hypot(
+    points[0].x - points[1].x,
+    points[0].y - points[1].y
+  );
+
+}
+
+
+function setCell(cell, value) {
+
+  if (!cell) {
+    return;
+  }
+
+  cell.classList.toggle("active", value);
+
+}
+
+
+function beginDrag() {
+
+  if (!startCell || mode !== null) {
+    return;
+  }
+
+  mode = "drag";
+
+  startCell.classList.add("dragging");
+
+  try { landscape.setPointerCapture(primaryPointer); } catch (e) {}
+
+}
+
+
+/* =========================================================
+   FREIE ABSPIELLINIE
+
+   Punkte werden relativ zur Fläche gespeichert (0–1),
+   damit die Linie beim Drehen des Tablets nicht verrutscht.
+   ========================================================= */
+
+let drawingMode = false;
+let drawingNow = false;
+let drawingPointer = null;
+
+let pathPoints = [];
+let playbackPath = [];
+let hasCustomPath = false;
+
+
+function toLocalPoint(clientX, clientY) {
+
+  const rect = landscape.getBoundingClientRect();
+
+  return {
+    x: Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)),
+    y: Math.max(0, Math.min(1, (clientY - rect.top) / rect.height))
+  };
+
+}
+
+
+function renderPath() {
+
+  drawnPath.setAttribute(
+    "points",
+    pathPoints
+      .map(function (p) {
+        return (p.x * 1000) + "," + (p.y * 1000);
+      })
+      .join(" ")
+  );
+
+}
+
+
+/* Pfad fein abtasten (Abstand in Pixeln) */
+
+function buildPlaybackPath() {
+
+  playbackPath = [];
+
+  if (pathPoints.length < 2) {
+    return;
+  }
+
+  const rect = landscape.getBoundingClientRect();
+
+  playbackPath.push({ x: pathPoints[0].x, y: pathPoints[0].y });
+
+  for (let i = 1; i < pathPoints.length; i++) {
+
+    const a = pathPoints[i - 1];
+    const b = pathPoints[i];
+
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+
+    const distance = Math.hypot(dx * rect.width, dy * rect.height);
+
+    const steps = Math.max(1, Math.ceil(distance / PATH_SAMPLE_DISTANCE));
+
+    for (let s = 1; s <= steps; s++) {
+
+      const t = s / steps;
+
+      playbackPath.push({
+        x: a.x + dx * t,
+        y: a.y + dy * t
+      });
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   STIFT-BUTTON
+   ========================================================= */
+
+drawButton.addEventListener("click", function () {
+
+  stopPlayback();
+
+  if (hasCustomPath) {
+    rememberState();
+  }
+
+  /* Alte Linie vollständig löschen. */
+
+  pathPoints = [];
+  playbackPath = [];
+  hasCustomPath = false;
+
+  renderPath();
+
+  pathHead.style.opacity = "0";
+  playline.style.opacity = "0";
+
+  drawingMode = true;
+  drawingNow = false;
+
+  landscape.classList.add("drawing");
+  drawButton.classList.add("active");
+
+});
+
+
+/* =========================================================
+   POINTER DOWN AUF DER FLÄCHE
+   ========================================================= */
+
+landscape.addEventListener("pointerdown", function (event) {
+
+  /* Titelzeile: normal tippen lassen */
+
+  if (event.target.closest("#scoreTitle")) {
+    return;
+  }
+
+  /* ---------- LINIE ZEICHNEN ---------- */
+
+  if (drawingMode) {
+
+    event.preventDefault();
+
+    drawingNow = true;
+    drawingPointer = event.pointerId;
+
+    pathPoints = [toLocalPoint(event.clientX, event.clientY)];
+
+    renderPath();
+
+    try { landscape.setPointerCapture(event.pointerId); } catch (e) {}
+
+    return;
+
+  }
+
+
+  /* ---------- ZEICHEN ---------- */
+
+  const cell = event.target.closest(".step");
+
+  if (event.pointerType === "touch") {
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  }
+
+
+  /* ---------- PINCH ---------- */
+
+  if (event.pointerType === "touch" && pointers.size === 2) {
+
+    event.preventDefault();
+
+    clearTimeout(holdTimer);
+
+    pinchCell = startCell || selectedCell;
+
+    if (!pinchCell) {
+      return;
+    }
+
+    mode = "pinch";
+
+    pinchStartDistance = touchDistance();
+    pinchStartScale = Number(pinchCell.dataset.scale || 1);
+
+    pinchCell.classList.add("dragging");
+
+    return;
+
+  }
+
+
+  if (!cell) {
+    return;
+  }
+
+  event.preventDefault();
+
+  beginChange();
+
+  selectedCell = cell;
+
+  startCell = cell;
+  primaryPointer = event.pointerId;
+
+  startX = event.clientX;
+  startY = event.clientY;
+
+  mode = null;
+
+  lastPaintedCell = cell;
+
+  paintValue = !cell.classList.contains("active");
+
+  clearTimeout(holdTimer);
+
+  holdTimer = setTimeout(beginDrag, HOLD_TIME);
+
+});
+
+
+/* =========================================================
+   POINTER MOVE
+   ========================================================= */
+
+landscape.addEventListener("pointermove", function (event) {
+
+  /* ---------- LINIE ---------- */
+
+  if (drawingMode && drawingNow && event.pointerId === drawingPointer) {
+
+    event.preventDefault();
+
+    const rect = landscape.getBoundingClientRect();
+
+    const point = toLocalPoint(event.clientX, event.clientY);
+    const previous = pathPoints[pathPoints.length - 1];
+
+    if (
+      !previous ||
+      Math.hypot(
+        (point.x - previous.x) * rect.width,
+        (point.y - previous.y) * rect.height
+      ) >= 2
+    ) {
+      pathPoints.push(point);
+      renderPath();
+    }
+
+    return;
+
+  }
+
+
+  /* ---------- TOUCH ---------- */
+
+  if (event.pointerType === "touch" && pointers.has(event.pointerId)) {
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+  }
+
+
+  /* ---------- PINCH ---------- */
+
+  if (mode === "pinch" && pinchCell && pointers.size >= 2) {
+
+    event.preventDefault();
+
+    const distance = touchDistance();
+
+    if (pinchStartDistance <= 0) {
+      return;
+    }
+
+    setScale(pinchCell, pinchStartScale * (distance / pinchStartDistance));
+
+    return;
+
+  }
+
+
+  if (!startCell) {
+    return;
+  }
+
+
+  /* ---------- VERSCHIEBEN ---------- */
+
+  if (mode === "drag") {
+
+    event.preventDefault();
+
+    positionCell(startCell, event.clientX, event.clientY);
+
+    if (trash) {
+      trash.classList.toggle("hover", isOverTrash(event.clientX, event.clientY));
+    }
+
+    return;
+
+  }
+
+
+  if (event.pointerId !== primaryPointer) {
+    return;
+  }
+
+  const distance = Math.hypot(
+    event.clientX - startX,
+    event.clientY - startY
+  );
+
+
+  /* ---------- WISCHEN (an/aus) ---------- */
+
+  if (mode === null && distance > PAINT_DISTANCE) {
+
+    clearTimeout(holdTimer);
+
+    mode = "paint";
+
+    setCell(startCell, paintValue);
+
+  }
+
+
+  if (mode === "paint") {
+
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const cell = element ? element.closest("#landscape .step") : null;
+
+    if (cell && cell !== lastPaintedCell) {
+      setCell(cell, paintValue);
+      lastPaintedCell = cell;
+    }
+
+  }
+
+});
+
+
+/* =========================================================
+   POINTER ENDE
+   ========================================================= */
+
+function releaseCapture(pointerId) {
+
+  try {
+    if (landscape.hasPointerCapture(pointerId)) {
+      landscape.releasePointerCapture(pointerId);
+    }
+  }
+  catch (e) {}
+
+}
+
+
+function isOverTrash(x, y) {
+
+  if (!trash) {
+    return false;
+  }
+
+  const r = trash.getBoundingClientRect();
+
+  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+
+}
+
+
+function finishPointer(event) {
+
+  /* ---------- LINIE FERTIG ---------- */
+
+  if (drawingMode && drawingNow && event.pointerId === drawingPointer) {
+
+    drawingNow = false;
+    drawingPointer = null;
+
+    if (pathPoints.length >= 2) {
+      buildPlaybackPath();
+      hasCustomPath = playbackPath.length >= 2;
+    }
+
+    drawingMode = false;
+
+    landscape.classList.remove("drawing");
+    drawButton.classList.remove("active");
+
+    releaseCapture(event.pointerId);
+
+    return;
+
+  }
+
+
+  /* ---------- NORMALE BEDIENUNG ---------- */
+
+  clearTimeout(holdTimer);
+
+  if (event.pointerType === "touch") {
+    pointers.delete(event.pointerId);
+  }
+
+
+  /* ---------- PINCH ENDE ---------- */
+
+  if (mode === "pinch") {
+
+    if (pointers.size < 2) {
+
+      if (pinchCell) {
+        pinchCell.classList.remove("dragging");
+      }
+
+      pinchCell = null;
+      startCell = null;
+      primaryPointer = null;
+      mode = null;
+
+      endChange();
+
+    }
+
+    return;
+
+  }
+
+
+  if (event.pointerId !== primaryPointer) {
+    return;
+  }
+
+
+  /* kurzer Klick = an/aus
+     Doppeltippen = Zeichen bekommt die eingestellte Farbe
+     (das zweite Tippen schaltet wieder zurück – an/aus
+     bleibt also, wie es war) */
+
+  if (startCell && mode === null) {
+
+    setCell(startCell, paintValue);
+
+    const now = Date.now();
+
+    if (lastTap.cell === startCell && now - lastTap.time < DOUBLE_TAP_TIME) {
+
+      startCell.dataset.pitch = currentPitch;
+      drawCell(startCell);
+
+      lastTap = { cell: null, time: 0 };
+
+    }
+
+    else {
+      lastTap = { cell: startCell, time: now };
+    }
+
+  }
+
+
+  /* Drag Ende */
+
+  if (startCell && mode === "drag") {
+
+    const rect = landscape.getBoundingClientRect();
+
+    /* Auf den Papierkorb oder zurück in den Fundus = löschen. */
+
+    if (trash) {
+      trash.classList.remove("hover");
+    }
+
+    if (isOverTrash(event.clientX, event.clientY) || event.clientX < rect.left) {
+
+      startCell.remove();
+
+      if (selectedCell === startCell) {
+        selectedCell = null;
+      }
+
+    }
+
+    else {
+      startCell.classList.remove("dragging");
+    }
+
+  }
+
+  releaseCapture(event.pointerId);
+
+  startCell = null;
+  primaryPointer = null;
+  mode = null;
+  lastPaintedCell = null;
+
+  endChange();
+
+}
+
+
+landscape.addEventListener("pointerup", finishPointer);
+landscape.addEventListener("pointercancel", finishPointer);
+
+
+/* =========================================================
+   LAPTOP-TOUCHPAD PINCH
+   ========================================================= */
+
+let lastWheelTime = 0;
+
+landscape.addEventListener("wheel", function (event) {
+
+  if (drawingMode || !event.ctrlKey || !selectedCell) {
+    return;
+  }
+
+  event.preventDefault();
+
+  if (Date.now() - lastWheelTime > 600) {
+    rememberState();
+  }
+
+  lastWheelTime = Date.now();
+
+  const oldScale = Number(selectedCell.dataset.scale || 1);
+  const factor = Math.exp(-event.deltaY * 0.018);
+
+  setScale(selectedCell, oldScale * factor);
+
+}, { passive: false });
+
+
+/* =========================================================
+   TEMPO
+   ========================================================= */
+
+let bpm = Number(tempoSlider.value);
+
+function showTempo() {
+  if (tempoValue) {
+    tempoValue.textContent = bpm + " BPM";
+  }
+}
+
+showTempo();
+
+/* Handy quer: Tempo-Fach antippen = Regler ein-/ausblenden */
+
+const PHONE_QUERY = "(orientation: landscape) and (max-height: 500px)";
+
+if (tempoGroup) {
+
+  tempoGroup.addEventListener("click", function (event) {
+
+    if (!matchMedia(PHONE_QUERY).matches || event.target === tempoSlider) {
+      return;
+    }
+
+    tempoGroup.classList.toggle("open");
+
+  });
+
+  document.addEventListener("pointerdown", function (event) {
+
+    if (tempoGroup.classList.contains("open") && !tempoGroup.contains(event.target)) {
+      tempoGroup.classList.remove("open");
+    }
+
+  });
+
+}
+
+
+tempoSlider.addEventListener("input", function () {
+  bpm = Number(this.value);
+  showTempo();
+});
+
+
+/* Dauer eines Ticks in Sekunden */
+
+function tickSeconds() {
+  return (60 / bpm) / 4 / SUBDIVISIONS;
+}
+
+
+/* Freie Linie und waagerechter Player haben dieselbe Gesamtdauer. */
+
+function loopSeconds() {
+  return tickSeconds() * TICKS;
+}
+
+
+/* =========================================================
+   PLAYBACK STATUS
+   ========================================================= */
+
+let playing = false;
+let schedulerTimer = null;
+let animationFrame = null;
+
+let nextTickTime = 0;
+let scheduleTick = 0;
+let visualQueue = [];
+
+let pathStartTime = null;
+let previousPathIndex = -1;
+let touchedCells = new Set();
+
+
+/* Zeichen wird kurz heller, wenn es klingt */
+
+function flashCell(cell) {
+
+  if (!cell || !cell.isConnected) {
+    return;
+  }
+
+  cell.classList.remove("hit");
+  void cell.offsetWidth;   // Animation neu starten
+  cell.classList.add("hit");
+
+}
+
+
+function cellSound(cell) {
+
+  return {
+    row: Number(cell.dataset.row),
+    volume: Number(cell.dataset.volume || 0.35),
+    rate: rateFromPitch(Number(cell.dataset.pitch === undefined ? 50 : cell.dataset.pitch))
+  };
+
+}
+
+
+/* =========================================================
+   WAAGERECHTER PLAYER
+
+   Klänge werden ein Stück im Voraus auf der Audio-Uhr
+   geplant. Dadurch bleibt der Rhythmus stabil, auch bei
+   vielen Zeichen und auf langsamen Geräten.
+
+   Linker Rand des Zeichens = Startpunkt.
+   ========================================================= */
+
+function buildTickMap() {
+
+  const width = landscape.clientWidth || 1;
+
+  const map = new Map();
+
+  landscape.querySelectorAll(".step.active").forEach(function (cell) {
+
+    const center = Number(cell.dataset.tick) / TICKS;
+    const half = Number(cell.dataset.w || SYMBOL_SIZE) *
+                 Number(cell.dataset.scale || 1) / 2;
+
+    let tick = Math.round((center - half / width) * TICKS);
+
+    tick = Math.max(0, Math.min(TICKS - 1, tick));
+
+    if (!map.has(tick)) {
+      map.set(tick, []);
+    }
+
+    const sound = cellSound(cell);
+    sound.cell = cell;
+
+    map.get(tick).push(sound);
+
+  });
+
+  return map;
+
+}
+
+
+function scheduler() {
+
+  if (!playing) {
+    return;
+  }
+
+  const map = buildTickMap();
+
+  while (nextTickTime < audioContext.currentTime + LOOKAHEAD) {
+
+    const sounds = map.get(scheduleTick);
+
+    if (sounds) {
+      sounds.forEach(function (s) {
+        playSound(s.row, s.volume, s.rate, nextTickTime);
+      });
+    }
+
+    visualQueue.push({ tick: scheduleTick, time: nextTickTime, sounds: sounds || null });
+
+    nextTickTime += tickSeconds();
+
+    scheduleTick = (scheduleTick + 1) % TICKS;
+
+  }
+
+}
+
+
+function animatePlayline() {
+
+  if (!playing) {
+    return;
+  }
+
+  const now = audioContext.currentTime;
+
+  while (visualQueue.length && visualQueue[0].time <= now) {
+
+    const item = visualQueue.shift();
+
+    playline.style.left = (item.tick / TICKS * 100) + "%";
+    playline.style.opacity = ".75";
+
+    if (item.sounds) {
+      item.sounds.forEach(function (sound) {
+        flashCell(sound.cell);
+      });
+    }
+
+  }
+
+  animationFrame = requestAnimationFrame(animatePlayline);
+
+}
+
+
+/* =========================================================
+   FREIE LINIE
+   ========================================================= */
+
+function activeCellRects() {
+
+  const base = landscape.getBoundingClientRect();
+
+  return Array.from(landscape.querySelectorAll(".step.active")).map(function (cell) {
+
+    const r = cell.getBoundingClientRect();
+
+    return {
+      cell: cell,
+      left: r.left - base.left,
+      right: r.right - base.left,
+      top: r.top - base.top,
+      bottom: r.bottom - base.top
+    };
+
+  });
+
+}
+
+
+function processPathPoint(point, rects, width, height) {
+
+  const x = point.x * width;
+  const y = point.y * height;
+
+  const cellsNow = new Set();
+
+  rects.forEach(function (r) {
+
+    if (x < r.left || x > r.right || y < r.top || y > r.bottom) {
+      return;
+    }
+
+    cellsNow.add(r.cell);
+
+    /* Nur beim Eintritt auslösen. */
+
+    if (!touchedCells.has(r.cell)) {
+      const s = cellSound(r.cell);
+      playSound(s.row, s.volume, s.rate, 0);
+      flashCell(r.cell);
+    }
+
+  });
+
+  touchedCells = cellsNow;
+
+}
+
+
+function animatePath() {
+
+  if (!playing) {
+    return;
+  }
+
+  if (playbackPath.length < 2) {
+    stopPlayback();
+    return;
+  }
+
+  const now = audioContext.currentTime;
+
+  if (pathStartTime === null) {
+    pathStartTime = now;
+  }
+
+  const duration = loopSeconds();
+
+  let elapsed = now - pathStartTime;
+
+  /* Neuer Durchlauf. */
+
+  if (elapsed >= duration) {
+
+    pathStartTime += Math.floor(elapsed / duration) * duration;
+    elapsed = now - pathStartTime;
+
+    previousPathIndex = -1;
+    touchedCells = new Set();
+
+  }
+
+  const progress = Math.max(0, Math.min(1, elapsed / duration));
+
+  const targetIndex = Math.min(
+    playbackPath.length - 1,
+    Math.floor(progress * playbackPath.length)
+  );
+
+  const startIndex = Math.max(0, previousPathIndex + 1);
+
+  if (targetIndex >= startIndex) {
+
+    const rect = landscape.getBoundingClientRect();
+    const rects = activeCellRects();
+
+    for (let i = startIndex; i <= targetIndex; i++) {
+      processPathPoint(playbackPath[i], rects, rect.width, rect.height);
+    }
+
+  }
+
+  previousPathIndex = targetIndex;
+
+  const p = playbackPath[targetIndex];
+
+  pathHead.setAttribute("cx", p.x * 1000);
+  pathHead.setAttribute("cy", p.y * 1000);
+  pathHead.style.opacity = "1";
+
+  animationFrame = requestAnimationFrame(animatePath);
+
+}
+
+
+/* =========================================================
+   PLAY / STOP
+   ========================================================= */
+
+async function startPlayback() {
+
+  if (playing || drawingMode) {
+    return;
+  }
+
+  await resumeAudio();
+
+  playing = true;
+  touchedCells = new Set();
+
+  updatePlayButton();
+
+  if (hasCustomPath && playbackPath.length >= 2) {
+
+    playline.style.opacity = "0";
+
+    pathStartTime = null;
+    previousPathIndex = -1;
+
+    animationFrame = requestAnimationFrame(animatePath);
+
+  }
+
+  else {
+
+    pathHead.style.opacity = "0";
+
+    scheduleTick = 0;
+    visualQueue = [];
+    nextTickTime = audioContext.currentTime + 0.05;
+
+    scheduler();
+
+    schedulerTimer = setInterval(scheduler, SCHEDULE_INTERVAL);
+
+    animationFrame = requestAnimationFrame(animatePlayline);
+
+  }
+
+}
+
+function updatePlayButton() {
+  playButton.classList.toggle("playing", playing);
+  playButton.setAttribute("aria-label", playing ? "Stopp" : "Spielen");
+}
+
+playButton.addEventListener("click", function () {
+  if (recordMode) {
+    leaveRecordMode();
+  }
+  if (playing) {
+    stopPlayback();
+  }
+  else {
+    startPlayback();
+  }
+});
+
+
+function stopPlayback() {
+
+  playing = false;
+
+  updatePlayButton();
+
+  clearInterval(schedulerTimer);
+  schedulerTimer = null;
+
+  if (animationFrame !== null) {
+    cancelAnimationFrame(animationFrame);
+  }
+
+  animationFrame = null;
+
+  visualQueue = [];
+  pathStartTime = null;
+  previousPathIndex = -1;
+  touchedCells = new Set();
+
+  playline.style.opacity = "0";
+  pathHead.style.opacity = "0";
+
+}
+
+if (stopButton) {
+  stopButton.addEventListener("click", stopPlayback);
+}
+
+
+/* =========================================================
+   RÜCKGÄNGIG
+
+   Vor jeder Änderung wird der Zustand gemerkt
+   (Zeichen + Linie, nicht das Tempo).
+   ========================================================= */
+
+const HISTORY_MAX = 40;
+
+let history = [];
+let pendingState = null;
+
+
+function getState() {
+
+  const cells = [];
+
+  landscape.querySelectorAll(".step").forEach(function (cell) {
+    cells.push({
+      row: Number(cell.dataset.row),
+      tick: Number(cell.dataset.tick),
+      y: Number(cell.dataset.y),
+      scale: Number(cell.dataset.scale || 1),
+      pitch: Number(cell.dataset.pitch === undefined ? 50 : cell.dataset.pitch),
+      active: cell.classList.contains("active")
+    });
+  });
+
+  const path = hasCustomPath
+    ? pathPoints.map(function (p) { return { x: p.x, y: p.y }; })
+    : [];
+
+  return JSON.stringify({ cells: cells, path: path });
+
+}
+
+
+function applyState(json) {
+
+  const state = JSON.parse(json);
+
+  landscape.querySelectorAll(".step").forEach(function (cell) {
+    cell.remove();
+  });
+
+  selectedCell = null;
+
+  state.cells.forEach(function (c) {
+
+    const cell = createSoundCell(c.row);
+
+    cell.dataset.pitch = c.pitch;
+
+    placeCell(cell, c.tick, c.y);
+    setScale(cell, c.scale);
+
+    cell.classList.toggle("active", c.active);
+
+  });
+
+  pathPoints = state.path;
+
+  renderPath();
+
+  if (pathPoints.length >= 2) {
+    buildPlaybackPath();
+    hasCustomPath = playbackPath.length >= 2;
+  }
+
+  else {
+    playbackPath = [];
+    hasCustomPath = false;
+    pathHead.style.opacity = "0";
+  }
+
+}
+
+
+function updateUndoButton() {
+  if (undoButton) {
+    undoButton.disabled = history.length === 0;
+  }
+}
+
+
+function pushHistory(state) {
+
+  if (history.length && history[history.length - 1] === state) {
+    return;
+  }
+
+  history.push(state);
+
+  if (history.length > HISTORY_MAX) {
+    history.shift();
+  }
+
+  updateUndoButton();
+
+}
+
+
+/* Für Änderungen, die sofort passieren */
+
+function rememberState() {
+  pushHistory(getState());
+}
+
+
+/* Für Gesten: Anfang merken, am Ende nur speichern,
+   wenn sich wirklich etwas geändert hat. */
+
+function beginChange() {
+  pendingState = getState();
+}
+
+function endChange() {
+
+  if (pendingState !== null && getState() !== pendingState) {
+    pushHistory(pendingState);
+  }
+
+  pendingState = null;
+
+}
+
+
+function undo() {
+
+  if (!history.length) {
+    return;
+  }
+
+  /* falls gerade der Stift aktiv ist: abbrechen */
+
+  if (drawingMode) {
+    drawingMode = false;
+    drawingNow = false;
+    drawingPointer = null;
+    landscape.classList.remove("drawing");
+    drawButton.classList.remove("active");
+  }
+
+  applyState(history.pop());
+
+  updateUndoButton();
+
+}
+
+
+if (undoButton) {
+  undoButton.addEventListener("click", undo);
+}
+
+updateUndoButton();
+
+
+/* =========================================================
+   PARTITUR LÖSCHEN
+   ========================================================= */
+
+function clearScore() {
+
+  stopPlayback();
+
+  landscape.querySelectorAll(".step").forEach(function (cell) {
+    cell.remove();
+  });
+
+  selectedCell = null;
+
+  pathPoints = [];
+  playbackPath = [];
+  hasCustomPath = false;
+
+  renderPath();
+
+  drawingMode = false;
+  drawingNow = false;
+  drawingPointer = null;
+
+  landscape.classList.remove("drawing");
+  drawButton.classList.remove("active");
+
+  if (scoreTitle) {
+    scoreTitle.value = "";
+  }
+
+}
+
+
+if (resetButton) {
+
+  resetButton.addEventListener("click", function () {
+
+    if (recordMode) {
+      if (confirm("Alle eigenen Aufnahmen löschen?")) {
+        clearRecordings();
+      }
+      return;
+    }
+
+    if (confirm("Ganze Partitur löschen?")) {
+      rememberState();
+      clearScore();
+    }
+
+  });
+
+}
+
+
+/* =========================================================
+   FENSTERGRÖSSE / TABLET DREHEN
+   ========================================================= */
+
+let resizeTimer = null;
+
+window.addEventListener("resize", function () {
+
+  clearTimeout(resizeTimer);
+
+  resizeTimer = setTimeout(function () {
+
+    updatePaletteSize();
+
+    if (hasCustomPath) {
+      buildPlaybackPath();
+    }
+
+  }, 150);
+
+});
+
+
+/* =========================================================
+   KOMPAKTE KODIERUNG
+
+   Zahlen werden mit 64 Zeichen geschrieben.
+   2 Zeichen reichen für Werte bis 4095.
+   ========================================================= */
+
+const B64 =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+function enc(n, len) {
+
+  const max = Math.pow(64, len) - 1;
+
+  n = Math.max(0, Math.min(max, Math.round(n)));
+
+  let s = "";
+
+  for (let i = 0; i < len; i++) {
+    s = B64[n % 64] + s;
+    n = Math.floor(n / 64);
+  }
+
+  return s;
+
+}
+
+function dec(str) {
+
+  let n = 0;
+
+  for (const ch of str) {
+    const v = B64.indexOf(ch);
+    if (v < 0) {
+      return NaN;
+    }
+    n = n * 64 + v;
+  }
+
+  return n;
+
+}
+
+
+/* =========================================================
+   LINIE VEREINFACHEN (für die Speicherung)
+   ========================================================= */
+
+function distanceToSegment(p, a, b) {
+
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+
+  const length = Math.hypot(dx, dy);
+
+  if (length === 0) {
+    return Math.hypot(p.x - a.x, p.y - a.y);
+  }
+
+  return Math.abs(dx * (a.y - p.y) - dy * (a.x - p.x)) / length;
+
+}
+
+
+function simplifyPath(points, tolerance) {
+
+  const n = points.length;
+
+  if (n < 3) {
+    return points.slice();
+  }
+
+  const keep = new Uint8Array(n);
+
+  keep[0] = 1;
+  keep[n - 1] = 1;
+
+  const stack = [[0, n - 1]];
+
+  while (stack.length) {
+
+    const range = stack.pop();
+    const start = range[0];
+    const end = range[1];
+
+    let maxDistance = 0;
+    let index = -1;
+
+    for (let i = start + 1; i < end; i++) {
+
+      const d = distanceToSegment(points[i], points[start], points[end]);
+
+      if (d > maxDistance) {
+        maxDistance = d;
+        index = i;
+      }
+
+    }
+
+    if (maxDistance > tolerance && index > 0) {
+      keep[index] = 1;
+      stack.push([start, index], [index, end]);
+    }
+
+  }
+
+  return points.filter(function (p, i) {
+    return keep[i];
+  });
+
+}
+
+
+/* =========================================================
+   PARTITUR → KURZER CODE (wird ins Bild geschrieben)
+
+   Format:  3 . Tempo . Zeichen . Linie
+
+   Zeichen (10 Zeichen):
+     Reihe(1) Tick(2) Höhe(2) Größe(2) Farbe(2) an/aus(1)
+
+   Linienpunkt (4 Zeichen): x(2) y(2), 0–1000
+   ========================================================= */
+
+function serializeScore() {
+
+  let cells = "";
+
+  landscape.querySelectorAll(".step").forEach(function (cell) {
+
+    cells +=
+      enc(Number(cell.dataset.row), 1) +
+      enc(Number(cell.dataset.tick), 2) +
+      enc(Number(cell.dataset.y) * 10, 2) +
+      enc(Number(cell.dataset.scale || 1) * 100, 2) +
+      enc(Number(cell.dataset.pitch === undefined ? 50 : cell.dataset.pitch) * 10, 2) +
+      (cell.classList.contains("active") ? "1" : "0");
+
+  });
+
+  let path = "";
+
+  if (hasCustomPath && pathPoints.length >= 2) {
+
+    const scaled = pathPoints.map(function (p) {
+      return { x: p.x * 1000, y: p.y * 1000 };
+    });
+
+    simplifyPath(scaled, SIMPLIFY_TOLERANCE).forEach(function (p) {
+      path += enc(p.x, 2) + enc(p.y, 2);
+    });
+
+  }
+
+  const title = scoreTitle
+    ? encodeURIComponent(scoreTitle.value.trim()).replace(/\./g, "%2E")
+    : "";
+
+  return ["3", enc(bpm, 2), cells, path, GRUPPE, title].join(".");
+
+}
+
+
+/* =========================================================
+   CODE LESEN
+   (Version 1 + 2 = ältere Bilder, Version 3 = aktuell)
+   ========================================================= */
+
+function parseScore(code) {
+
+  const score = { bpm: 0, cells: [], path: [] };
+
+  if (code.indexOf("2.") === 0 || code.indexOf("3.") === 0) {
+
+    const v3 = code.indexOf("3.") === 0;
+    const size = v3 ? 10 : 8;
+
+    const parts = code.split(".");
+
+    score.gruppe = parts[4] || "";
+
+    try {
+      score.title = parts[5] ? decodeURIComponent(parts[5]) : "";
+    }
+    catch (e) {
+      score.title = "";
+    }
+
+    score.bpm = dec(parts[1] || "");
+
+    const cells = parts[2] || "";
+
+    for (let i = 0; i + size <= cells.length; i += size) {
+
+      score.cells.push({
+        row: dec(cells.substr(i, 1)),
+        tick: dec(cells.substr(i + 1, 2)),
+        y: dec(cells.substr(i + 3, 2)),
+        scale: dec(cells.substr(i + 5, 2)),
+        pitch: v3 ? dec(cells.substr(i + 7, 2)) / 10 : 50,
+        active: cells.substr(i + size - 1, 1) === "1"
+      });
+
+    }
+
+    const path = parts[3] || "";
+
+    for (let i = 0; i + 4 <= path.length; i += 4) {
+
+      score.path.push({
+        x: dec(path.substr(i, 2)),
+        y: dec(path.substr(i + 2, 2))
+      });
+
+    }
+
+    return score;
+
+  }
+
+  const parts = code.split("~");
+
+  if (parts[0] !== "1") {
+    return null;
+  }
+
+  score.bpm = Number(parts[1]);
+
+  (parts[2] || "").split("_").forEach(function (entry) {
+
+    if (!entry) {
+      return;
+    }
+
+    const v = entry.split(".").map(Number);
+
+    score.cells.push({
+      row: v[0], tick: v[1], y: v[2], scale: v[3], active: v[4] === 1
+    });
+
+  });
+
+  (parts[3] || "").split("_").forEach(function (entry) {
+
+    if (!entry) {
+      return;
+    }
+
+    const v = entry.split(".").map(Number);
+
+    score.path.push({ x: v[0], y: v[1] });
+
+  });
+
+  return score;
+
+}
+
+
+/* =========================================================
+   CODE → PARTITUR
+   ========================================================= */
+
+/*
+   origAspect = Seitenverhältnis (Breite/Höhe) der Fläche,
+   auf der die Partitur gespeichert wurde. Ist es bekannt,
+   wird die Partitur unverzerrt eingepasst: gleichmäßig
+   skaliert und mittig gesetzt, statt in die Breite oder
+   Höhe gezogen. Ohne Angabe: wie bisher.
+*/
+
+function loadScore(code, origAspect) {
+
+  const score = parseScore(code);
+
+  if (!score) {
+    return false;
+  }
+
+  clearScore();
+
+
+  /* Einpassen ohne Verzerrung (alle Werte relativ 0–1) */
+
+  let fitW = 1;
+  let fitH = 1;
+  let offX = 0;
+  let offY = 0;
+
+  const rect = landscape.getBoundingClientRect();
+
+  if (origAspect && rect.width && rect.height) {
+
+    const aspect = rect.width / rect.height;
+
+    if (aspect > origAspect) {
+      fitW = origAspect / aspect;
+      offX = (1 - fitW) / 2;
+    }
+
+    else {
+      fitH = aspect / origAspect;
+      offY = (1 - fitH) / 2;
+    }
+
+  }
+
+  function fitX(xn) { return offX + xn * fitW; }
+  function fitY(yn) { return offY + yn * fitH; }
+
+  if (score.bpm) {
+    tempoSlider.value = score.bpm;
+    bpm = Number(tempoSlider.value);
+    showTempo();
+  }
+
+  score.cells.forEach(function (c) {
+
+    if ([c.row, c.tick, c.y, c.scale].some(isNaN)) {
+      return;
+    }
+
+    if (c.row < 0 || c.row >= ROWS) {
+      return;
+    }
+
+    const cell = createSoundCell(c.row);
+
+    cell.dataset.pitch = (c.pitch === undefined || isNaN(c.pitch)) ? 50 : c.pitch;
+
+    placeCell(
+      cell,
+      fitX(c.tick / TICKS) * TICKS,
+      fitY(c.y / 1000) * 100
+    );
+
+    setScale(cell, c.scale / 100);
+
+    cell.classList.toggle("active", c.active);
+
+  });
+
+  pathPoints = score.path
+    .filter(function (p) {
+      return !isNaN(p.x) && !isNaN(p.y);
+    })
+    .map(function (p) {
+      return { x: fitX(p.x / 1000), y: fitY(p.y / 1000) };
+    });
+
+  renderPath();
+
+  if (pathPoints.length >= 2) {
+    buildPlaybackPath();
+    hasCustomPath = playbackPath.length >= 2;
+  }
+
+  if (scoreTitle) {
+    scoreTitle.value = score.title || "";
+  }
+
+  return true;
+
+}
+
+
+/* =========================================================
+   PARTITUR ALS BILD (PNG)
+   ========================================================= */
+
+function renderScoreImage() {
+
+  const rect = landscape.getBoundingClientRect();
+
+  const w = rect.width;
+  const h = rect.height;
+
+  const ratio = Math.min(2, window.devicePixelRatio || 1);
+
+  const canvas = document.createElement("canvas");
+
+  canvas.width = Math.round(w * ratio);
+  canvas.height = Math.round(h * ratio);
+
+  const ctx = canvas.getContext("2d");
+
+  ctx.scale(ratio, ratio);
+
+
+  /* Papier */
+
+  ctx.fillStyle = "#f2f0e9";
+  ctx.fillRect(0, 0, w, h);
+
+
+  /* Zeichen */
+
+  landscape.querySelectorAll(".step").forEach(function (cell) {
+
+    const scale = Number(cell.dataset.scale || 1);
+
+    const cw = Number(cell.dataset.w || SYMBOL_SIZE) * scale;
+    const ch = Number(cell.dataset.h || SYMBOL_SIZE) * scale;
+
+    const x = Number(cell.dataset.tick) / TICKS * w;
+    const y = Number(cell.dataset.y) / 100 * h;
+
+    ctx.globalAlpha = cell.classList.contains("active") ? 1 : 0.22;
+
+    /* wie Druckfarben übereinander */
+    ctx.globalCompositeOperation = "multiply";
+
+    ctx.drawImage(cell, x - cw / 2, y - ch / 2, cw, ch);
+
+  });
+
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+
+
+  /* Titel */
+
+  if (scoreTitle && scoreTitle.value.trim()) {
+
+    ctx.fillStyle = "#141414";
+    ctx.font = "700 " + (w < 700 ? 13 : 16) + "px 'Atkinson Hyperlegible', 'Trebuchet MS', sans-serif";
+    ctx.textBaseline = "top";
+    ctx.fillText(scoreTitle.value.trim(), 12, 10);
+
+  }
+
+
+  /* Linie */
+
+  if (pathPoints.length >= 2) {
+
+    ctx.save();
+
+    ctx.globalAlpha = 0.75;
+    ctx.strokeStyle = "#7a7a7a";
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    ctx.beginPath();
+    ctx.moveTo(pathPoints[0].x * w, pathPoints[0].y * h);
+
+    for (let i = 1; i < pathPoints.length; i++) {
+      ctx.lineTo(pathPoints[i].x * w, pathPoints[i].y * h);
+    }
+
+    ctx.stroke();
+
+    ctx.restore();
+
+  }
+
+  return canvas;
+
+}
+
+
+/* =========================================================
+   PARTITUR IM BILD VERSTECKEN (PNG-Textabschnitt)
+   ========================================================= */
+
+const PNG_KEYWORD = "klanglandschaft";
+
+const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
+
+
+const CRC_TABLE = (function () {
+
+  const table = new Uint32Array(256);
+
+  for (let n = 0; n < 256; n++) {
+
+    let c = n;
+
+    for (let k = 0; k < 8; k++) {
+      c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    }
+
+    table[n] = c >>> 0;
+
+  }
+
+  return table;
+
+})();
+
+
+function crc32(bytes) {
+
+  let c = 0xFFFFFFFF;
+
+  for (let i = 0; i < bytes.length; i++) {
+    c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  }
+
+  return (c ^ 0xFFFFFFFF) >>> 0;
+
+}
+
+
+function textToBytes(text) {
+
+  const bytes = new Uint8Array(text.length);
+
+  for (let i = 0; i < text.length; i++) {
+    bytes[i] = text.charCodeAt(i) & 0xFF;
+  }
+
+  return bytes;
+
+}
+
+
+function bytesToText(bytes) {
+
+  let text = "";
+
+  for (let i = 0; i < bytes.length; i++) {
+    text += String.fromCharCode(bytes[i]);
+  }
+
+  return text;
+
+}
+
+
+async function addScoreToPng(blob, code) {
+
+  const png = new Uint8Array(await blob.arrayBuffer());
+
+  const body = textToBytes("tEXt" + PNG_KEYWORD + "\0" + code);
+
+  const chunk = new Uint8Array(4 + body.length + 4);
+  const view = new DataView(chunk.buffer);
+
+  view.setUint32(0, body.length - 4);
+  chunk.set(body, 4);
+  view.setUint32(4 + body.length, crc32(body));
+
+  const insertAt = 33;   // direkt nach IHDR
+
+  return new Blob(
+    [png.slice(0, insertAt), chunk, png.slice(insertAt)],
+    { type: "image/png" }
+  );
+
+}
+
+
+/* Breite/Höhe des gespeicherten Bildes = Seitenverhältnis
+   der Fläche, auf der es entstanden ist. */
+
+function readPngAspect(buffer) {
+
+  try {
+
+    const view = new DataView(buffer);
+
+    const w = view.getUint32(16);
+    const h = view.getUint32(20);
+
+    return (w > 0 && h > 0) ? w / h : null;
+
+  }
+
+  catch (e) {
+    return null;
+  }
+
+}
+
+
+function readScoreFromPng(buffer) {
+
+  const png = new Uint8Array(buffer);
+
+  for (let i = 0; i < 8; i++) {
+    if (png[i] !== PNG_SIGNATURE[i]) {
+      return null;
+    }
+  }
+
+  const view = new DataView(buffer);
+
+  let pos = 8;
+
+  while (pos + 8 <= png.length) {
+
+    const length = view.getUint32(pos);
+    const type = bytesToText(png.subarray(pos + 4, pos + 8));
+
+    if (type === "tEXt") {
+
+      const data = png.subarray(pos + 8, pos + 8 + length);
+      const zero = data.indexOf(0);
+
+      if (zero > 0 && bytesToText(data.subarray(0, zero)) === PNG_KEYWORD) {
+        return bytesToText(data.subarray(zero + 1));
+      }
+
+    }
+
+    if (type === "IEND") {
+      break;
+    }
+
+    pos += 12 + length;
+
+  }
+
+  return null;
+
+}
+
+
+/* =========================================================
+   BILD SPEICHERN – direkt herunterladen
+   ========================================================= */
+
+/*
+   Cargo fängt Link-Klicks auf der Seite ab und öffnet sie
+   im selben Tab. Deshalb wird der Download-Link NICHT in
+   die Seite eingefügt – so bekommt Cargo den Klick nicht mit.
+   Falls ein Browser den Download nicht direkt kann,
+   öffnet sich das Bild in einem neuen Tab.
+*/
+
+function downloadBlob(blob, filename) {
+
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  link.target = "_blank";
+  link.rel = "noopener";
+
+  link.addEventListener("click", function (event) {
+    event.stopPropagation();
+  });
+
+  link.click();
+
+  /* URL nicht sofort zerstören – ein neuer Tab braucht sie noch. */
+
+  setTimeout(function () {
+    URL.revokeObjectURL(url);
+  }, 60000);
+
+}
+
+
+async function saveImage(event) {
+
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  let blob = null;
+
+  try {
+
+    const canvas = renderScoreImage();
+
+    blob = await new Promise(function (resolve, reject) {
+      try { canvas.toBlob(resolve, "image/png"); }
+      catch (e) { reject(e); }
+    });
+
+  }
+
+  catch (e) {
+    console.error(e);
+    showMessage("Bild-Export nicht möglich: Zeichnungen sind nicht freigegeben.");
+    return;
+  }
+
+  if (!blob) {
+    showMessage("Das Bild konnte nicht erzeugt werden.");
+    return;
+  }
+
+  try {
+    blob = await addScoreToPng(blob, serializeScore());
+  }
+  catch (e) {
+    console.error(e);
+  }
+
+  const name = scoreTitle
+    ? scoreTitle.value.trim().replace(/[\\/:*?"<>|]+/g, "").slice(0, 40)
+    : "";
+
+  downloadBlob(blob, (name || "klanglandschaft") + ".png");
+
+  showMessage("Bild gespeichert.");
+
+}
+
+if (saveImageButton) {
+  saveImageButton.addEventListener("click", saveImage);
+}
+
+
+/* =========================================================
+   PARTITUR AUS BILD LADEN
+   ========================================================= */
+
+async function loadFromImageFile(file) {
+
+  if (!file) {
+    return;
+  }
+
+  let code = null;
+  let aspect = null;
+
+  try {
+    const buffer = await file.arrayBuffer();
+    code = readScoreFromPng(buffer);
+    aspect = readPngAspect(buffer);
+  }
+  catch (e) {
+    code = null;
+  }
+
+  const before = getState();
+
+  if (!code || !loadScore(code, aspect)) {
+    showMessage("In diesem Bild steckt keine Partitur.");
+    return;
+  }
+
+  pushHistory(before);
+
+  const herkunft = parseScore(code).gruppe;
+
+  if (herkunft && herkunft !== GRUPPE) {
+    showMessage("Partitur geladen – sie stammt aus Gruppe „" + herkunft + "“.");
+    return;
+  }
+
+  showMessage("Partitur geladen.");
+
+}
+
+
+if (openImageButton && imageInput) {
+
+  openImageButton.addEventListener("click", function () {
+    imageInput.click();
+  });
+
+  imageInput.addEventListener("change", function () {
+    loadFromImageFile(imageInput.files[0]);
+    imageInput.value = "";
+  });
+
+}
+
+
+/* Laptop: Bild einfach auf die Partitur ziehen */
+
+if (app) {
+
+  app.addEventListener("dragover", function (event) {
+
+    if (event.dataTransfer && Array.from(event.dataTransfer.types).includes("Files")) {
+      event.preventDefault();
+      app.classList.add("dropping");
+    }
+
+  });
+
+  app.addEventListener("dragleave", function (event) {
+
+    if (event.target === app || !app.contains(event.relatedTarget)) {
+      app.classList.remove("dropping");
+    }
+
+  });
+
+  app.addEventListener("drop", function (event) {
+
+    event.preventDefault();
+    app.classList.remove("dropping");
+
+    loadFromImageFile(event.dataTransfer && event.dataTransfer.files[0]);
+
+  });
+
+}
+
+
+/* =========================================================
+   AUFNEHMEN (nur auf Seiten mit Mikrofon-Knopf #mic)
+
+   Mikrofon-Knopf antippen = Aufnahme-Modus an/aus.
+   Im Aufnahme-Modus: ein Zeichen im Fundus GEDRÜCKT HALTEN
+   und dabei das Geräusch machen. Loslassen = fertig.
+
+   Die Aufnahme wird automatisch zugeschnitten (Stille am
+   Anfang und Ende weg) und auf gleiche Lautstärke gebracht.
+   Sie bleibt auf diesem Gerät gespeichert, auch nach dem
+   Neuladen. Im Aufnahme-Modus löscht ✕ alle Aufnahmen.
+   ========================================================= */
+
+const MAX_RECORDING_MS = 4000;
+
+let recordMode = false;
+let micStream = null;
+let recorder = null;
+let recordChunks = [];
+let recordTimer = null;
+let recordItem = null;
+
+
+function recordingKey(row) {
+  return "aufnahme:" + GRUPPE + ":" + row;
+}
+
+
+/* ---------- kleine Datenbank im Browser ---------- */
+
+function openRecordingDB() {
+
+  return new Promise(function (resolve, reject) {
+
+    if (!window.indexedDB) {
+      reject(new Error("kein IndexedDB"));
+      return;
+    }
+
+    const request = indexedDB.open("klanglandschaft", 1);
+
+    request.onupgradeneeded = function () {
+      request.result.createObjectStore("aufnahmen");
+    };
+
+    request.onsuccess = function () { resolve(request.result); };
+    request.onerror = function () { reject(request.error); };
+
+  });
+
+}
+
+
+async function dbRequest(mode, action) {
+
+  const db = await openRecordingDB();
+
+  return new Promise(function (resolve, reject) {
+
+    const tx = db.transaction("aufnahmen", mode);
+    const request = action(tx.objectStore("aufnahmen"));
+
+    tx.oncomplete = function () { resolve(request ? request.result : undefined); };
+    tx.onerror = function () { reject(tx.error); };
+
+  });
+
+}
+
+
+/* ---------- Aufnahme bearbeiten ---------- */
+
+function processRecording(raw) {
+
+  const rate = raw.sampleRate;
+  const length = raw.length;
+
+
+  /* Mono */
+
+  const mono = new Float32Array(length);
+
+  for (let c = 0; c < raw.numberOfChannels; c++) {
+    const data = raw.getChannelData(c);
+    for (let i = 0; i < length; i++) {
+      mono[i] += data[i] / raw.numberOfChannels;
+    }
+  }
+
+
+  /* Lautester Punkt */
+
+  let peak = 0;
+
+  for (let i = 0; i < length; i++) {
+    const a = Math.abs(mono[i]);
+    if (a > peak) {
+      peak = a;
+    }
+  }
+
+  if (peak < 0.003) {
+    return null;   // nichts zu hören
+  }
+
+
+  /* Stille vorne und hinten abschneiden */
+
+  const threshold = Math.max(peak * 0.04, 0.002);
+
+  let start = 0;
+  while (start < length && Math.abs(mono[start]) < threshold) {
+    start++;
+  }
+
+  let end = length - 1;
+  while (end > start && Math.abs(mono[end]) < threshold) {
+    end--;
+  }
+
+  start = Math.max(0, start - Math.round(rate * 0.01));
+  end = Math.min(length - 1, end + Math.round(rate * 0.08));
+
+  const size = Math.max(1, end - start + 1);
+
+
+  /* Gleiche Lautstärke + kurze Blenden gegen Knackser */
+
+  const out = audioContext.createBuffer(1, size, rate);
+  const data = out.getChannelData(0);
+
+  const gain = 0.9 / peak;
+  const fadeIn = Math.min(size, Math.round(rate * 0.004));
+  const fadeOut = Math.min(size, Math.round(rate * 0.03));
+
+  for (let i = 0; i < size; i++) {
+
+    let v = mono[start + i] * gain;
+
+    if (i < fadeIn) {
+      v *= i / fadeIn;
+    }
+
+    if (i > size - fadeOut) {
+      v *= (size - i) / fadeOut;
+    }
+
+    data[i] = v;
+
+  }
+
+  return out;
+
+}
+
+
+/* ---------- Gespeicherte Aufnahmen laden ---------- */
+
+async function applyStoredRecording(row, stored) {
+
+  try {
+
+    const raw = await audioContext.decodeAudioData(stored.data.slice(0));
+    const processed = processRecording(raw);
+
+    if (processed) {
+      recordedRows.add(row);
+      buffers[row] = processed;
+    }
+
+  }
+
+  catch (e) {
+    console.error("Aufnahme konnte nicht gelesen werden:", e);
+  }
+
+}
+
+
+async function loadStoredRecordings() {
+
+  for (let row = 0; row < ROWS; row++) {
+
+    try {
+
+      const stored = await dbRequest("readonly", function (store) {
+        return store.get(recordingKey(row));
+      });
+
+      if (stored && stored.data) {
+        await applyStoredRecording(row, stored);
+      }
+
+    }
+
+    catch (e) {
+      return;   // keine Datenbank verfügbar
+    }
+
+  }
+
+}
+
+
+async function clearRecordings() {
+
+  for (let row = 0; row < ROWS; row++) {
+
+    try {
+      await dbRequest("readwrite", function (store) {
+        store.delete(recordingKey(row));
+        return null;
+      });
+    }
+    catch (e) {}
+
+  }
+
+  recordedRows.clear();
+
+  SOUNDS.forEach(function (entry, row) {
+    buffers[row] = null;
+    if (entry.klang) {
+      loadSound(entry.klang, row);
+    }
+  });
+
+  showMessage("Aufnahmen gelöscht – die Original-Klänge sind zurück.");
+
+}
+
+
+/* ---------- Aufnahme-Modus ---------- */
+
+async function enterRecordMode() {
+
+  if (
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia ||
+    !window.MediaRecorder
+  ) {
+    showMessage("Aufnehmen geht in diesem Browser leider nicht.");
+    return;
+  }
+
+  try {
+
+    /* Ohne Filter: wichtig für Kontaktmikrofone */
+
+    micStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
+      }
+    });
+
+  }
+
+  catch (e) {
+    showMessage("Kein Zugriff aufs Mikrofon.");
+    return;
+  }
+
+  await resumeAudio();
+
+  stopPlayback();
+
+  recordMode = true;
+
+  micButton.classList.add("active");
+  app.classList.add("record-mode");
+
+  showMessage("Zeichen gedrückt halten und Geräusch machen.");
+
+}
+
+
+function leaveRecordMode() {
+
+  stopRecording();
+
+  if (micStream) {
+    micStream.getTracks().forEach(function (track) {
+      track.stop();
+    });
+  }
+
+  micStream = null;
+  recordMode = false;
+
+  micButton.classList.remove("active");
+  app.classList.remove("record-mode");
+
+}
+
+
+function startRecordingFor(row, item) {
+
+  if (!micStream || recorder) {
+    return;
+  }
+
+  recordChunks = [];
+  recordItem = item;
+
+  try {
+    recorder = new MediaRecorder(micStream);
+  }
+  catch (e) {
+    showMessage("Aufnahme konnte nicht starten.");
+    return;
+  }
+
+  recorder.ondataavailable = function (event) {
+    if (event.data && event.data.size > 0) {
+      recordChunks.push(event.data);
+    }
+  };
+
+  recorder.onstop = function () {
+    finishRecording(row);
+  };
+
+  recorder.start();
+
+  item.classList.add("recording");
+
+  clearTimeout(recordTimer);
+  recordTimer = setTimeout(stopRecording, MAX_RECORDING_MS);
+
+}
+
+
+function stopRecording() {
+
+  clearTimeout(recordTimer);
+
+  if (recorder && recorder.state === "recording") {
+    recorder.stop();
+  }
+
+}
+
+
+async function finishRecording(row) {
+
+  const type = recorder ? recorder.mimeType : "";
+
+  recorder = null;
+
+  if (recordItem) {
+    recordItem.classList.remove("recording");
+    recordItem = null;
+  }
+
+  const blob = new Blob(recordChunks, { type: type || "audio/webm" });
+
+  recordChunks = [];
+
+  if (blob.size < 800) {
+    showMessage("Etwas länger gedrückt halten.");
+    return;
+  }
+
+  let processed = null;
+  let data = null;
+
+  try {
+    data = await blob.arrayBuffer();
+    const raw = await audioContext.decodeAudioData(data.slice(0));
+    processed = processRecording(raw);
+  }
+  catch (e) {
+    console.error(e);
+    showMessage("Aufnahme konnte nicht gelesen werden.");
+    return;
+  }
+
+  if (!processed) {
+    showMessage("Nichts zu hören – noch mal!");
+    return;
+  }
+
+  recordedRows.add(row);
+  buffers[row] = processed;
+
+
+  /* auf dem Gerät merken */
+
+  try {
+    await dbRequest("readwrite", function (store) {
+      return store.put({ type: blob.type, data: data }, recordingKey(row));
+    });
+  }
+  catch (e) {}
+
+
+  /* gleich anhören */
+
+  playSound(row, 0.6, rateFromPitch(currentPitch), 0);
+
+  showMessage("Aufgenommen!");
+
+}
+
+
+if (RECORDING_ENABLED) {
+
+  micButton.addEventListener("click", function () {
+
+    if (recordMode) {
+      leaveRecordMode();
+    }
+    else {
+      enterRecordMode();
+    }
+
+  });
+
+  loadStoredRecordings();
+
+}
+
+
+/* =========================================================
+   VOLLBILD
+   Blendet Browser- und Systemleisten aus (Android, Laptop).
+   Auf iPhones erlaubt Safari das nicht – dort bleibt der
+   Knopf unsichtbar.
+   ========================================================= */
+
+function fullscreenElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+
+
+async function enterFullscreen() {
+
+  const el = document.documentElement;
+
+  try {
+
+    if (el.requestFullscreen) {
+      await el.requestFullscreen({ navigationUI: "hide" });
+    }
+    else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    }
+
+  }
+
+  catch (e) {
+    showMessage("Vollbild geht hier leider nicht.");
+    return;
+  }
+
+
+  /* Handy: im Vollbild aufs Querformat festlegen (wenn möglich) */
+
+  try {
+    if (screen.orientation && screen.orientation.lock && matchMedia("(pointer: coarse)").matches) {
+      await screen.orientation.lock("landscape");
+    }
+  }
+  catch (e) {}
+
+}
+
+
+function exitFullscreen() {
+
+  try {
+
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+    else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+
+  }
+
+  catch (e) {}
+
+}
+
+
+function updateFullscreenButton() {
+
+  if (!fullscreenButton) {
+    return;
+  }
+
+  const full = !!fullscreenElement();
+
+  fullscreenButton.classList.toggle("is-full", full);
+  fullscreenButton.setAttribute("aria-label", full ? "Vollbild beenden" : "Vollbild");
+  fullscreenButton.title = full ? "Vollbild beenden" : "Vollbild";
+
+}
+
+
+if (fullscreenButton) {
+
+  const supported =
+    document.fullscreenEnabled ||
+    document.webkitFullscreenEnabled;
+
+  if (supported) {
+
+    fullscreenButton.hidden = false;
+
+    fullscreenButton.addEventListener("click", function () {
+
+      if (fullscreenElement()) {
+        exitFullscreen();
+      }
+      else {
+        enterFullscreen();
+      }
+
+    });
+
+    document.addEventListener("fullscreenchange", updateFullscreenButton);
+    document.addEventListener("webkitfullscreenchange", updateFullscreenButton);
+
+  }
+
+}
+
+
+/* =========================================================
+   KONTEXTMENÜ AUF DER PARTITUR AUS
+   ========================================================= */
+
+landscape.addEventListener("contextmenu", function (event) {
+  event.preventDefault();
+});
+
+
+});
+</script>
+
+
+<script>
+/* App offline-fähig machen */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function (e) {
+      console.error("Service Worker:", e);
+    });
+  });
+}
+</script>
+
+</body>
+</html>
